@@ -1,0 +1,47 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Infrastructure\Persistence;
+
+use App\Domain\Members\Member;
+use App\Domain\Members\MemberRepositoryInterface;
+
+final class InMemoryMemberRepository implements MemberRepositoryInterface
+{
+    /** @var array<string, Member> */
+    private array $members = [];
+
+    public function save(Member $member): void
+    {
+        $this->members[$member->id()] = $member;
+    }
+
+    public function findById(string $id): ?Member
+    {
+        return $this->members[$id] ?? null;
+    }
+
+    /**
+     * @return array<int, Member>
+     */
+    public function findByHouseholdId(string $householdId): array
+    {
+        $members = array_values(array_filter(
+            $this->members,
+            static fn (Member $member): bool => $member->householdId() === $householdId
+        ));
+
+        usort(
+            $members,
+            static fn (Member $a, Member $b): int => strcmp($a->name(), $b->name())
+        );
+
+        return $members;
+    }
+
+    public function delete(string $id): void
+    {
+        unset($this->members[$id]);
+    }
+}
