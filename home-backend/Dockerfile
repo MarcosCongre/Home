@@ -1,4 +1,4 @@
-FROM php:8.3-cli
+FROM php:8.2-cli
 
 WORKDIR /var/www/html
 
@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     unzip \
     libsqlite3-dev \
-    && docker-php-ext-install pdo_sqlite \
+    && docker-php-ext-install pdo_mysql \
     && rm -rf /var/www/ && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY . /var/www/html

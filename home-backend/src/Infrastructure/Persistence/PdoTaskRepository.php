@@ -14,16 +14,19 @@ final class PdoTaskRepository implements TaskRepositoryInterface
     public function __construct(
         private PDO $pdo
     ) {
-        $this->pdo->exec(
-            'CREATE TABLE IF NOT EXISTS tasks (
-                id TEXT PRIMARY KEY,
-                title TEXT NOT NULL,
-                status TEXT NOT NULL,
-                household_id TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                completed_at TEXT NULL
-            )'
-        );
+        if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $this->pdo->exec(
+                'CREATE TABLE IF NOT EXISTS tasks (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    household_id TEXT NOT NULL,
+                    assigned_member_id TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    completed_at TEXT NULL
+                )'
+            );
+        }
     }
 
     public function save(Task $task): void
@@ -37,14 +40,15 @@ final class PdoTaskRepository implements TaskRepositoryInterface
                  SET title = :title,
                      status = :status,
                      household_id = :householdId,
+                     assigned_member_id = :assignedMemberId,
                      created_at = :createdAt,
                      completed_at = :completedAt
                  WHERE id = :id'
             );
         } else {
             $statement = $this->pdo->prepare(
-                'INSERT INTO tasks (id, title, status, household_id, created_at, completed_at)
-                 VALUES (:id, :title, :status, :householdId, :createdAt, :completedAt)'
+                'INSERT INTO tasks (id, title, status, household_id, assigned_member_id, created_at, completed_at)
+                 VALUES (:id, :title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt)'
             );
         }
 
@@ -53,6 +57,7 @@ final class PdoTaskRepository implements TaskRepositoryInterface
             ':title' => $task->title()->value(),
             ':status' => $task->status()->value,
             ':householdId' => $task->householdId(),
+            ':assignedMemberId' => $task->assignedMemberId(),
             ':createdAt' => $task->createdAt()->format(DATE_ATOM),
             ':completedAt' => $task->completedAt()?->format(DATE_ATOM),
         ]);
@@ -70,6 +75,12 @@ final class PdoTaskRepository implements TaskRepositoryInterface
         }
 
         return $this->hydrateTask($row);
+    }
+
+    public function delete(string $id): void
+    {
+        $statement = $this->pdo->prepare('DELETE FROM tasks WHERE id = :id');
+        $statement->execute([':id' => $id]);
     }
 
     /**
@@ -101,7 +112,8 @@ final class PdoTaskRepository implements TaskRepositoryInterface
             status: TaskStatus::from((string) $row['status']),
             householdId: (string) $row['household_id'],
             createdAt: new \DateTimeImmutable((string) $row['created_at']),
-            completedAt: $completedAt !== null && $completedAt !== '' ? new \DateTimeImmutable((string) $completedAt) : null
+            completedAt: $completedAt !== null && $completedAt !== '' ? new \DateTimeImmutable((string) $completedAt) : null,
+            assignedMemberId: isset($row['assigned_member_id']) ? ((string) $row['assigned_member_id'] ?: null) : null
         );
     }
 }

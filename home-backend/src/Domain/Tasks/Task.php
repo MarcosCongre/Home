@@ -14,7 +14,8 @@ class Task
         private TaskStatus $status = TaskStatus::PENDING,
         private readonly string $householdId,
         private readonly DateTimeImmutable $createdAt,
-        private ?DateTimeImmutable $completedAt = null
+        private ?DateTimeImmutable $completedAt = null,
+        private ?string $assignedMemberId = null
     ) {
     }
 
@@ -41,6 +42,17 @@ class Task
 
         $this->status = TaskStatus::COMPLETED;
         $this->completedAt = new DateTimeImmutable();
+    }
+
+    public function update(string $title, ?string $assignedMemberId, ?TaskStatus $status = null): void
+    {
+        $this->title = new TaskTitle($title);
+        $this->assignedMemberId = $assignedMemberId;
+
+        if ($status !== null && $status !== $this->status) {
+            $this->status = $status;
+            $this->completedAt = $status === TaskStatus::COMPLETED ? new DateTimeImmutable() : null;
+        }
     }
 
     public function id(): string
@@ -71,5 +83,10 @@ class Task
     public function completedAt(): ?DateTimeImmutable
     {
         return $this->completedAt;
+    }
+
+    public function assignedMemberId(): ?string
+    {
+        return $this->assignedMemberId;
     }
 }

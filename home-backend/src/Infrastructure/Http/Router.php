@@ -25,12 +25,22 @@ final class Router
 
         if ($method === 'POST' && $path === '/tasks') {
             $controller = new TaskController($this->taskRepository);
-            return $controller->create($this->decodeJson((string) ($request['php://input'] ?? '{}')));
+            return $controller->create($this->decodeJson($this->body($request)));
+        }
+
+        if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
+            $controller = new TaskController($this->taskRepository);
+            return $controller->update($matches[1], $this->decodeJson($this->body($request)));
+        }
+
+        if ($method === 'DELETE' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
+            (new TaskController($this->taskRepository))->delete($matches[1]);
+            return ['deleted' => true, 'id' => $matches[1]];
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/complete$#', $path, $matches) === 1) {
             $controller = new TaskController($this->taskRepository);
-            $payload = $this->decodeJson((string) ($request['php://input'] ?? '{}'));
+            $payload = $this->decodeJson($this->body($request));
             return $controller->complete($matches[1], (string) ($payload['userId'] ?? ''));
         }
 
@@ -47,12 +57,12 @@ final class Router
 
         if ($this->memberRepository !== null && $method === 'POST' && $path === '/members') {
             $controller = new MemberController($this->memberRepository);
-            return $controller->create($this->decodeJson((string) ($request['php://input'] ?? '{}')));
+            return $controller->create($this->decodeJson($this->body($request)));
         }
 
         if ($this->memberRepository !== null && $method === 'PATCH' && preg_match('#^/members/([^/]+)$#', $path, $matches) === 1) {
             $controller = new MemberController($this->memberRepository);
-            $payload = $this->decodeJson((string) ($request['php://input'] ?? '{}'));
+            $payload = $this->decodeJson($this->body($request));
             return $controller->update($matches[1], $payload);
         }
 
@@ -88,5 +98,19 @@ final class Router
         }
 
         return $decoded;
+    }
+
+    /** @param array<string, mixed> $request */
+    private function body(array $request): string
+    {
+        if (isset($request['php://input'])) {
+            return (string) $request['php://input'];
+        }
+
+        if (isset($request['rawBody'])) {
+            return (string) $request['rawBody'];
+        }
+
+        return file_get_contents('php://input') ?: '{}';
     }
 }

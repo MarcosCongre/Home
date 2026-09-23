@@ -10,6 +10,8 @@ interface TaskRepositoryInterface
 
     public function findById(string $id): ?Task;
 
+    public function delete(string $id): void;
+
     /**
      * @return array<int, Task>
      */

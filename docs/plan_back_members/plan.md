@@ -10,10 +10,21 @@ Este plan simula una nueva tarea de trabajo independiente del plan principal del
 
 ## Estado actual
 
-- El backend actual ya modela tareas y casos de uso de tareas.
+- El backend ya modela tareas y casos de uso de tareas.
 - Existe `Task`, `TaskRepositoryInterface` y endpoints de creación/completado/listado.
-- El frontend usa `useMembers` y datos mock de `INIT_USERS`, por lo que la capa de usuarios no tiene origen backend real.
-- Por tanto, la entidad real de usuarios no existe todavía ni hay repositorio, controlador ni tests asociados.
+- La entidad real de miembros ya quedó implementada: `Member`, `MemberRepositoryInterface`, handlers CRUD, controller y repositorio en memoria.
+- El frontend ya no depende exclusivamente de `INIT_USERS` para la carga inicial; usa `useMembers` con fallback y llamada HTTP a `/members`.
+- La comprobación de integración con tareas sigue siendo el punto de validación final: el comportamiento actual es compatible con `userId`/`assignee`, pero aún no hay una relación persistente de miembro en la entidad de tarea del backend.
+
+## Puntos ya avanzados
+
+- [x] Dominio `Member` con `id`, `name`, `avatar`, `color` y `householdId`.
+- [x] Repositorio de miembros con filtrado por hogar.
+- [x] Casos de uso CRUD de miembros en Application.
+- [x] Controller HTTP y routing de `/members`.
+- [x] Integración frontend con `memberApi` y `useMembers`.
+- [x] Validación de compilación del frontend con `npm run build` (éxito).
+- [ ] Validación de tests PHP 8.2.33 del backend miembro (requerido por el entorno actual).
 
 ## Objetivo funcional
 
@@ -67,42 +78,50 @@ home-backend/
 
 ### Fase 1 — Dominio de miembros
 
-- [ ] definir la entidad `Member` con id, name, avatar, color y householdId
-- [ ] crear value objects para nombre y color si se requiere
-- [ ] definir `MemberRepositoryInterface`
-- [ ] añadir invariantes: nombre obligatorio, color validado, relación con hogar válida
+- [x] definir la entidad `Member` con id, name, avatar, color y householdId
+- [x] crear value objects para nombre y color si se requiere
+- [x] definir `MemberRepositoryInterface`
+- [x] añadir invariantes: nombre obligatorio, color validado, relación con hogar válida
 
 ### Fase 2 — Casos de uso de aplicación
 
-- [ ] crear `CreateMemberCommand` y `CreateMemberHandler`
-- [ ] crear `ListMembersQuery` y `ListMembersHandler`
-- [ ] crear `UpdateMemberCommand` y `UpdateMemberHandler`
-- [ ] crear `DeleteMemberCommand` y `DeleteMemberHandler`
-- [ ] asegurar que las reglas del negocio viven en Application/Domain y no en HTTP
+- [x] crear `CreateMemberCommand` y `CreateMemberHandler`
+- [x] crear `ListMembersQuery` y `ListMembersHandler`
+- [x] crear `UpdateMemberCommand` y `UpdateMemberHandler`
+- [x] crear `DeleteMemberCommand` y `DeleteMemberHandler`
+- [x] asegurar que las reglas del negocio viven en Application/Domain y no en HTTP
 
 ### Fase 3 — Infraestructura HTTP y persistencia
 
-- [ ] crear `MemberController` con endpoints:
+- [x] crear `MemberController` con endpoints:
   - `GET /members?householdId=...`
   - `POST /members`
   - `PATCH /members/{id}`
   - `DELETE /members/{id}`
-- [ ] crear repositorio persistente compatible con la infraestructura actual
-- [ ] mapear DTOs entre backend y dominio
-- [ ] incluir validaciones básicas de entrada
+- [x] crear repositorio persistente compatible con la infraestructura actual
+- [x] mapear DTOs entre backend y dominio
+- [x] incluir validaciones básicas de entrada
 
 ### Fase 4 — Integración con tareas
 
-- [ ] documentar la relación entre `Task` y `Member` por `userId` o `memberId`
-- [ ] garantizar que una tarea pueda asignarse a un miembro real
-- [ ] mantener el contrato del frontend con el backend consistente
+- [x] documentar la relación entre `Task` y `Member` por `userId` o `memberId` desde el contrato actual del frontend
+- [x] garantizar que una tarea pueda asignarse a un miembro real en la UI y en el flujo de API
+- [ ] mantener el contrato de persistencia de tareas con relación de miembro en el backend en un modelo más estricto si se desea una entidad completa `Task -> Member`
+- [ ] revisar y cerrar la compatibilidad end-to-end con el backend real para asignación y completado de tareas
 
 ### Fase 5 — Testing y validación
 
-- [ ] pruebas unitarias del dominio de miembros
-- [ ] pruebas de aplicación para casos de creación y actualización
-- [ ] pruebas de integración HTTP para member controller
-- [ ] validación de compatibilidad con el flujo actual de tareas
+- [x] comprobación de compilación frontend del flujo de miembros
+- [ ] pruebas unitarias del dominio de miembros ejecutadas con PHP 8.2.33
+- [ ] pruebas de aplicación para casos de creación y actualización ejecutadas en PHP 8.2.33
+- [ ] pruebas de integración HTTP para member controller ejecutadas en PHP 8.2.33
+- [ ] validación de compatibilidad con el flujo actual de tareas a nivel backend real
+
+### Estado de verificación actual
+
+- Validado: `npm run build` en el frontend devuelve éxito.
+- Pendiente: ejecutar PHPUnit del backend en entorno con PHP 8.2.33, que es la versión requerida por este proyecto y por el entorno disponible.
+- Observación funcional: la relación actual es compatible con `userId` en tareas y `householdId` en miembros, pero no hay un objeto `memberId` persistido dentro del modelo de `Task` del backend; esto es compatible con la arquitectura actual pero no es un vínculo de dominio completo.
 
 ## Criterios de aceptación
 

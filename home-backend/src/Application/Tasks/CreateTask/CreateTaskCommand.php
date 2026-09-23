@@ -9,7 +9,8 @@ readonly class CreateTaskCommand
     public function __construct(
         public string $title,
         public string $householdId,
-        public string $userId
+        public string $userId,
+        public ?string $assignedMemberId = null
     ) {
     }
 }

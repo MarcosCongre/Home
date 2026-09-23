@@ -10,6 +10,9 @@ use App\Application\Tasks\CreateTask\CreateTaskCommand;
 use App\Application\Tasks\CreateTask\CreateTaskHandler;
 use App\Application\Tasks\ListTasks\ListTasksHandler;
 use App\Application\Tasks\ListTasks\ListTasksQuery;
+use App\Application\Tasks\UpdateTask\UpdateTaskCommand;
+use App\Application\Tasks\UpdateTask\UpdateTaskHandler;
+use App\Application\Tasks\DeleteTask\DeleteTaskHandler;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 
@@ -30,10 +33,28 @@ final class TaskController
         $task = $handler->handle(new CreateTaskCommand(
             title: (string) ($payload['title'] ?? ''),
             householdId: (string) ($payload['householdId'] ?? ''),
-            userId: (string) ($payload['userId'] ?? '')
+            userId: (string) ($payload['userId'] ?? ''),
+            assignedMemberId: isset($payload['assignedMemberId']) ? (string) $payload['assignedMemberId'] : null
         ));
 
         return $this->serializeTask($task);
+    }
+
+    public function update(string $taskId, array $payload): array
+    {
+        $status = isset($payload['status']) ? \App\Domain\Tasks\TaskStatus::tryFrom((string) $payload['status']) : null;
+        $handler = new UpdateTaskHandler($this->taskRepository);
+        return $this->serializeTask($handler->handle(new UpdateTaskCommand(
+            taskId: $taskId,
+            title: (string) ($payload['title'] ?? ''),
+            assignedMemberId: isset($payload['assignedMemberId']) ? (string) $payload['assignedMemberId'] : null,
+            status: $status
+        )));
+    }
+
+    public function delete(string $taskId): void
+    {
+        (new DeleteTaskHandler($this->taskRepository))->handle($taskId);
     }
 
     public function complete(string $taskId, string $userId): array
@@ -70,6 +91,7 @@ final class TaskController
             'householdId' => $task->householdId(),
             'createdAt' => $task->createdAt()->format(DATE_ATOM),
             'completedAt' => $task->completedAt()?->format(DATE_ATOM),
+            'assignedMemberId' => $task->assignedMemberId(),
         ];
     }
 }

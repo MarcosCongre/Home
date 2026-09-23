@@ -22,6 +22,11 @@ final class InMemoryTaskRepository implements TaskRepositoryInterface
         return $this->tasks[$id] ?? null;
     }
 
+    public function delete(string $id): void
+    {
+        unset($this->tasks[$id]);
+    }
+
     /**
      * @return array<int, Task>
      */

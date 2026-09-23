@@ -1,7 +1,7 @@
 ## Plan: Backend de Home
 
 ### TL;DR
-Diseñar un backend PHP 8.3+ con arquitectura hexagonal, separando Domain, Application e Infrastructure para lograr un sistema extensible, escalable y probado. La lógica del negocio deberá vivir en el dominio, los casos de uso en la aplicación y la persistencia/HTTP en la infraestructura.
+Diseñar un backend PHP 8.2+ con arquitectura hexagonal, separando Domain, Application e Infrastructure para lograr un sistema extensible, escalable y probado. La lógica del negocio deberá vivir en el dominio, los casos de uso en la aplicación y la persistencia/HTTP en la infraestructura.
 
 ### Estado actual del proyecto
 
@@ -179,7 +179,7 @@ flowchart LR
 ### 3. Plan de desarrollo por fases
 
 #### Fase 0: Preparación técnica
-1. [x] Crear proyecto PHP 8.3+ con Composer.
+1. [x] Crear proyecto PHP 8.2+ con Composer.
 2. [x] Definir PSR-12 y autoload PSR-4.
 3. [x] Instalar PHPUnit/Pest, Doctrine ORM o DBAL, dotenv, UUID generator, PHPStan.
 4. [x] Configurar phpunit.xml y CI básico.
@@ -400,7 +400,7 @@ final class InMemoryTaskRepository implements TaskRepositoryInterface
 ```
 
 ### 6. Resumen de decisiones clave
-- PHP 8.3+ con typing estrictos, readonly y enums.
+- PHP 8.2+ con typing estrictos, readonly y enums.
 - Domain, Application e Infrastructure separadas y dependientes en sentido correcto.
 - Repositorios como puertos con implementaciones concretas en infraestructura.
 - Testing desde el dominio hacia la infraestructura, con PHPUnit/Pest.

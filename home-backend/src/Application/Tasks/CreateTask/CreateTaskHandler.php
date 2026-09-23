@@ -24,6 +24,10 @@ final class CreateTaskHandler
             createdAt: new DateTimeImmutable()
         );
 
+        if ($command->assignedMemberId !== null && $command->assignedMemberId !== '') {
+            $task->update($command->title, $command->assignedMemberId);
+        }
+
         $this->taskRepository->save($task);
 
         return $task;
