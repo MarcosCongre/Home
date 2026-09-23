@@ -17,7 +17,7 @@ type TaskAction =
   | { type: 'load-success'; tasks: Task[] }
   | { type: 'load-failure' }
   | { type: 'set-tasks'; tasks: Task[] }
-  | { type: 'update-task'; taskId: string; updater: (task: Task) => Task }
+  | { type: 'update-task'; taskId: number; updater: (task: Task) => Task }
   | { type: 'replace-task'; task: Task }
 
 const initialState: TaskState = {
@@ -91,7 +91,7 @@ export function useTasks() {
     dispatch({ type: 'set-tasks', tasks })
   }, [])
 
-  const updateTaskOptimistically = useCallback((taskId: string, updater: (task: Task) => Task) => {
+  const updateTaskOptimistically = useCallback((taskId: number, updater: (task: Task) => Task) => {
     dispatch({ type: 'update-task', taskId, updater })
   }, [])
 
@@ -113,24 +113,24 @@ export function useTasks() {
     }
   }, [])
 
-  const createTask = useCallback(async (title: string, assignee = '') => {
+  const createTask = useCallback(async (title: string, assignee: number | '' = '') => {
     const created = await createTaskRequest({ title, assignee })
     dispatch({ type: 'set-tasks', tasks: [...state.tasks, created] })
     return created
   }, [state.tasks])
 
-  const updateTaskRequestById = useCallback(async (taskId: string, data: { title?: string; assignee?: string; status?: 'pending' | 'completed' }) => {
+  const updateTaskRequestById = useCallback(async (taskId: number, data: { title?: string; assignee?: number | ''; status?: 'pending' | 'completed' }) => {
     const updated = await updateTaskRequest(taskId, data)
     dispatch({ type: 'replace-task', task: updated })
     return updated
   }, [])
 
-  const deleteTask = useCallback(async (taskId: string) => {
+  const deleteTask = useCallback(async (taskId: number) => {
     await deleteTaskRequest(taskId)
     dispatch({ type: 'set-tasks', tasks: state.tasks.filter(task => task.id !== taskId) })
   }, [state.tasks])
 
-  const completeTaskById = useCallback(async (taskId: string, userId: string) => {
+  const completeTaskById = useCallback(async (taskId: number, userId: string) => {
     const current = state.tasks.find(task => task.id === taskId)
     if (!current) return
 

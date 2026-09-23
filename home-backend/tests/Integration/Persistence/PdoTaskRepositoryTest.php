@@ -16,7 +16,7 @@ final class PdoTaskRepositoryTest extends TestCase
         $repository = new PdoTaskRepository($pdo);
 
         $task = Task::create(
-            id: 'task-100',
+            id: 100,
             title: 'Sort pantry',
             householdId: 'house-9',
             createdAt: new \DateTimeImmutable('2026-09-16 11:00:00')
@@ -24,12 +24,12 @@ final class PdoTaskRepositoryTest extends TestCase
 
         $repository->save($task);
 
-        $stored = $repository->findById('task-100');
+        $stored = $repository->findById(100);
 
         $this->assertNotNull($stored);
         $this->assertSame('Sort pantry', $stored->title()->value());
         $this->assertSame('house-9', $stored->householdId());
-        $this->assertSame('task-100', $stored->id());
+        $this->assertSame(100, $stored->id());
 
         $tasks = $repository->findByHouseholdId('house-9');
         $this->assertCount(1, $tasks);

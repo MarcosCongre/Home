@@ -19,7 +19,7 @@ final class CompleteTaskHandlerTest extends TestCase
     {
         $repository = new InMemoryTaskRepository();
         $task = Task::create(
-            id: 'task-100',
+            id: 100,
             title: 'Fold laundry',
             householdId: 'house-42',
             createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
@@ -29,20 +29,20 @@ final class CompleteTaskHandlerTest extends TestCase
         $handler = new CompleteTaskHandler($repository);
 
         $completedTask = $handler->handle(new CompleteTaskCommand(
-            taskId: 'task-100',
+            taskId: 100,
             userId: 'user-77'
         ));
 
         $this->assertSame(TaskStatus::COMPLETED, $completedTask->status());
         $this->assertNotNull($completedTask->completedAt());
-        $this->assertSame(TaskStatus::COMPLETED, $repository->findById('task-100')->status());
+        $this->assertSame(TaskStatus::COMPLETED, $repository->findById(100)->status());
     }
 
     public function testItDoesNotAllowCompletingAnAlreadyCompletedTask(): void
     {
         $repository = new InMemoryTaskRepository();
         $task = Task::create(
-            id: 'task-101',
+            id: 101,
             title: 'Clean windows',
             householdId: 'house-42',
             createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
@@ -56,7 +56,7 @@ final class CompleteTaskHandlerTest extends TestCase
         $this->expectExceptionMessage('Task is already completed.');
 
         $handler->handle(new CompleteTaskCommand(
-            taskId: 'task-101',
+            taskId: 101,
             userId: 'user-77'
         ));
     }

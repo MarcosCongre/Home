@@ -8,12 +8,12 @@ interface MemberRepositoryInterface
 {
     public function save(Member $member): void;
 
-    public function findById(string $id): ?Member;
+    public function findById(int $id): ?Member;
 
     /**
      * @return array<int, Member>
      */
     public function findByHouseholdId(string $householdId): array;
 
-    public function delete(string $id): void;
+    public function delete(int $id): void;
 }

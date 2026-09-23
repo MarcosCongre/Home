@@ -11,7 +11,7 @@ services:
       APP_DEBUG: "true"
       DB_HOST: mysql
       DB_PORT: 3306
-      DB_DATABASE: sodapp
+      DB_DATABASE: home
       DB_USERNAME: root
       DB_PASSWORD: 
       DB_CHARSET: utf8mb4

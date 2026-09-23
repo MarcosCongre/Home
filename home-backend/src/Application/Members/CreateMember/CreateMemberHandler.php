@@ -17,7 +17,7 @@ final class CreateMemberHandler
     public function handle(CreateMemberCommand $command): Member
     {
         $member = Member::create(
-            id: uniqid('member_', true),
+            id: 0,
             name: $command->name,
             avatar: $command->avatar,
             color: $command->color,

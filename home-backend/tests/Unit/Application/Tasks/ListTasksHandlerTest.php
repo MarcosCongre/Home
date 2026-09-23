@@ -19,19 +19,19 @@ final class ListTasksHandlerTest extends TestCase
         $repository = new InMemoryTaskRepository();
 
         $first = Task::create(
-            id: 'task-1',
+            id: 1,
             title: 'Wash dishes',
             householdId: 'house-42',
             createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
         );
         $second = Task::create(
-            id: 'task-2',
+            id: 2,
             title: 'Take out trash',
             householdId: 'house-42',
             createdAt: new \DateTimeImmutable('2026-09-16 09:00:00')
         );
         $otherHousehold = Task::create(
-            id: 'task-3',
+            id: 3,
             title: 'Vacuum living room',
             householdId: 'house-99',
             createdAt: new \DateTimeImmutable('2026-09-16 10:00:00')
@@ -48,6 +48,6 @@ final class ListTasksHandlerTest extends TestCase
         ));
 
         $this->assertCount(2, $tasks);
-        $this->assertSame(['task-1', 'task-2'], array_map(static fn (Task $task): string => $task->id(), $tasks));
+        $this->assertSame([1, 2], array_map(static fn (Task $task): int => $task->id(), $tasks));
     }
 }

@@ -18,13 +18,13 @@ final class CreateTaskHandler
     public function handle(CreateTaskCommand $command): Task
     {
         $task = Task::create(
-            id: uniqid('task_', true),
+            id: 0,
             title: $command->title,
             householdId: $command->householdId,
             createdAt: new DateTimeImmutable()
         );
 
-        if ($command->assignedMemberId !== null && $command->assignedMemberId !== '') {
+        if ($command->assignedMemberId !== null) {
             $task->update($command->title, $command->assignedMemberId);
         }
 

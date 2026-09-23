@@ -31,13 +31,13 @@ final class TaskControllerTest extends TestCase
     {
         $repository = new InMemoryTaskRepository();
         $first = Task::create(
-            id: 'task-1',
+            id: 1,
             title: 'Water plants',
             householdId: 'house-2',
             createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
         );
         $second = Task::create(
-            id: 'task-2',
+            id: 2,
             title: 'Vacuum hallway',
             householdId: 'house-2',
             createdAt: new \DateTimeImmutable('2026-09-16 09:00:00')
@@ -50,6 +50,6 @@ final class TaskControllerTest extends TestCase
         $tasks = $controller->list('house-2');
 
         $this->assertCount(2, $tasks);
-        $this->assertSame(['task-1', 'task-2'], array_map(static fn (array $task): string => $task['id'], $tasks));
+        $this->assertSame([1, 2], array_map(static fn (array $task): int => $task['id'], $tasks));
     }
 }

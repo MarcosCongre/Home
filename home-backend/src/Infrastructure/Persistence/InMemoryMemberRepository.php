@@ -9,15 +9,24 @@ use App\Domain\Members\MemberRepositoryInterface;
 
 final class InMemoryMemberRepository implements MemberRepositoryInterface
 {
-    /** @var array<string, Member> */
+    /** @var array<int, Member> */
     private array $members = [];
 
     public function save(Member $member): void
     {
+        if ($member->id() === 0) {
+            $member->assignGeneratedId($this->nextId());
+        }
+
         $this->members[$member->id()] = $member;
     }
 
-    public function findById(string $id): ?Member
+    private function nextId(): int
+    {
+        return $this->members === [] ? 1 : max(array_keys($this->members)) + 1;
+    }
+
+    public function findById(int $id): ?Member
     {
         return $this->members[$id] ?? null;
     }
@@ -40,7 +49,7 @@ final class InMemoryMemberRepository implements MemberRepositoryInterface
         return $members;
     }
 
-    public function delete(string $id): void
+    public function delete(int $id): void
     {
         unset($this->members[$id]);
     }

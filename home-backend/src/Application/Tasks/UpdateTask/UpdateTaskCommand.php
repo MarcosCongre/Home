@@ -9,9 +9,9 @@ use App\Domain\Tasks\TaskStatus;
 readonly class UpdateTaskCommand
 {
     public function __construct(
-        public string $taskId,
+        public int $taskId,
         public string $title,
-        public ?string $assignedMemberId = null,
+        public ?int $assignedMemberId = null,
         public ?TaskStatus $status = null
     ) {
     }

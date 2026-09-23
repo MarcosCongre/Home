@@ -8,9 +8,9 @@ interface TaskRepositoryInterface
 {
     public function save(Task $task): void;
 
-    public function findById(string $id): ?Task;
+    public function findById(int $id): ?Task;
 
-    public function delete(string $id): void;
+    public function delete(int $id): void;
 
     /**
      * @return array<int, Task>

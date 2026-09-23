@@ -7,7 +7,7 @@ namespace App\Application\Members\DeleteMember;
 readonly class DeleteMemberCommand
 {
     public function __construct(
-        public string $memberId
+        public int $memberId
     ) {
     }
 }

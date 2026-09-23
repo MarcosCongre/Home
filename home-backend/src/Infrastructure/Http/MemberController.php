@@ -43,7 +43,7 @@ final class MemberController
      * @param array<string, mixed> $payload
      * @return array<string, mixed>
      */
-    public function update(string $memberId, array $payload): array
+    public function update(int $memberId, array $payload): array
     {
         $handler = new UpdateMemberHandler($this->memberRepository);
         $member = $handler->handle(new UpdateMemberCommand(
@@ -56,7 +56,7 @@ final class MemberController
         return $this->serializeMember($member);
     }
 
-    public function delete(string $memberId): void
+    public function delete(int $memberId): void
     {
         $handler = new DeleteMemberHandler($this->memberRepository);
         $handler->handle(new DeleteMemberCommand($memberId));

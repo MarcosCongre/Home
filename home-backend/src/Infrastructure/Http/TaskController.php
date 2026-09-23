@@ -34,30 +34,30 @@ final class TaskController
             title: (string) ($payload['title'] ?? ''),
             householdId: (string) ($payload['householdId'] ?? ''),
             userId: (string) ($payload['userId'] ?? ''),
-            assignedMemberId: isset($payload['assignedMemberId']) ? (string) $payload['assignedMemberId'] : null
+            assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null)
         ));
 
         return $this->serializeTask($task);
     }
 
-    public function update(string $taskId, array $payload): array
+    public function update(int $taskId, array $payload): array
     {
         $status = isset($payload['status']) ? \App\Domain\Tasks\TaskStatus::tryFrom((string) $payload['status']) : null;
         $handler = new UpdateTaskHandler($this->taskRepository);
         return $this->serializeTask($handler->handle(new UpdateTaskCommand(
             taskId: $taskId,
             title: (string) ($payload['title'] ?? ''),
-            assignedMemberId: isset($payload['assignedMemberId']) ? (string) $payload['assignedMemberId'] : null,
+            assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null),
             status: $status
         )));
     }
 
-    public function delete(string $taskId): void
+    public function delete(int $taskId): void
     {
         (new DeleteTaskHandler($this->taskRepository))->handle($taskId);
     }
 
-    public function complete(string $taskId, string $userId): array
+    public function complete(int $taskId, string $userId): array
     {
         $handler = new CompleteTaskHandler($this->taskRepository);
         $task = $handler->handle(new CompleteTaskCommand(
@@ -93,5 +93,22 @@ final class TaskController
             'completedAt' => $task->completedAt()?->format(DATE_ATOM),
             'assignedMemberId' => $task->assignedMemberId(),
         ];
+    }
+
+    private function optionalPositiveInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_int($value) && $value > 0) {
+            return $value;
+        }
+
+        if (is_string($value) && preg_match('/^[1-9][0-9]*$/', $value) === 1) {
+            return (int) $value;
+        }
+
+        throw new \InvalidArgumentException('Entity ids must be positive integers.');
     }
 }

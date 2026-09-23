@@ -41,6 +41,9 @@ try {
     $request['PATH_INFO'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     $request['rawBody'] = file_get_contents('php://input') ?: '{}';
     echo json_encode($router->dispatch($request), JSON_THROW_ON_ERROR);
+} catch (InvalidArgumentException $exception) {
+    http_response_code(400);
+    echo json_encode(['error' => $exception->getMessage()]);
 } catch (Throwable $exception) {
     http_response_code(500);
     echo json_encode(['error' => getenv('APP_DEBUG') === 'true' ? $exception->getMessage() : 'Internal server error']);

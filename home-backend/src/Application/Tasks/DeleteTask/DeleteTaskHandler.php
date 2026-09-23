@@ -12,7 +12,7 @@ final class DeleteTaskHandler
     {
     }
 
-    public function handle(string $taskId): void
+    public function handle(int $taskId): void
     {
         if ($this->taskRepository->findById($taskId) === null) {
             throw new \RuntimeException('Task not found.');

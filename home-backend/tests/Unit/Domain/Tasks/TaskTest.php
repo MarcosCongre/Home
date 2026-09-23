@@ -15,13 +15,13 @@ final class TaskTest extends TestCase
     public function testItCreatesAPendingTask(): void
     {
         $task = Task::create(
-            id: 'task-123',
+            id: 123,
             title: 'Vacuum living room',
             householdId: 'house-1',
             createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
         );
 
-        $this->assertSame('task-123', $task->id());
+        $this->assertSame(123, $task->id());
         $this->assertSame('Vacuum living room', $task->title()->value());
         $this->assertSame(TaskStatus::PENDING, $task->status());
         $this->assertSame('house-1', $task->householdId());
@@ -30,7 +30,7 @@ final class TaskTest extends TestCase
     public function testItCanBeCompleted(): void
     {
         $task = Task::create(
-            id: 'task-456',
+            id: 456,
             title: 'Wash dishes',
             householdId: 'house-2',
             createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')

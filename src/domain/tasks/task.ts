@@ -1,9 +1,9 @@
 export type TaskPriority = 'low' | 'med' | 'high'
 
 export type Task = {
-  id: string
+  id: number
   title: string
-  assignee: string
+  assignee: number | ''
   category: string
   recurrence: string
   done: boolean

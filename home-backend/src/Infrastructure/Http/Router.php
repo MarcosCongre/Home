@@ -30,18 +30,19 @@ final class Router
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
             $controller = new TaskController($this->taskRepository);
-            return $controller->update($matches[1], $this->decodeJson($this->body($request)));
+            return $controller->update($this->positiveId($matches[1]), $this->decodeJson($this->body($request)));
         }
 
         if ($method === 'DELETE' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
-            (new TaskController($this->taskRepository))->delete($matches[1]);
-            return ['deleted' => true, 'id' => $matches[1]];
+            $id = $this->positiveId($matches[1]);
+            (new TaskController($this->taskRepository))->delete($id);
+            return ['deleted' => true, 'id' => $id];
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/complete$#', $path, $matches) === 1) {
             $controller = new TaskController($this->taskRepository);
             $payload = $this->decodeJson($this->body($request));
-            return $controller->complete($matches[1], (string) ($payload['userId'] ?? ''));
+            return $controller->complete($this->positiveId($matches[1]), (string) ($payload['userId'] ?? ''));
         }
 
         if ($method === 'GET' && $path === '/tasks') {
@@ -63,13 +64,14 @@ final class Router
         if ($this->memberRepository !== null && $method === 'PATCH' && preg_match('#^/members/([^/]+)$#', $path, $matches) === 1) {
             $controller = new MemberController($this->memberRepository);
             $payload = $this->decodeJson($this->body($request));
-            return $controller->update($matches[1], $payload);
+            return $controller->update($this->positiveId($matches[1]), $payload);
         }
 
         if ($this->memberRepository !== null && $method === 'DELETE' && preg_match('#^/members/([^/]+)$#', $path, $matches) === 1) {
             $controller = new MemberController($this->memberRepository);
-            $controller->delete($matches[1]);
-            return ['deleted' => true, 'id' => $matches[1]];
+            $id = $this->positiveId($matches[1]);
+            $controller->delete($id);
+            return ['deleted' => true, 'id' => $id];
         }
 
         if ($this->memberRepository !== null && $method === 'GET' && $path === '/members') {
@@ -112,5 +114,14 @@ final class Router
         }
 
         return file_get_contents('php://input') ?: '{}';
+    }
+
+    private function positiveId(string $value): int
+    {
+        if (preg_match('/^[1-9][0-9]*$/', $value) !== 1) {
+            throw new \InvalidArgumentException('Entity ids must be positive integers.');
+        }
+
+        return (int) $value;
     }
 }

@@ -17,8 +17,8 @@ type MemberAction =
   | { type: 'load-failure' }
   | { type: 'set-users'; users: Member[] }
   | { type: 'add-user'; user: Member }
-  | { type: 'update-user'; userId: string; data: Omit<Member, 'id'> }
-  | { type: 'remove-user'; userId: string }
+  | { type: 'update-user'; userId: number; data: Omit<Member, 'id'> }
+  | { type: 'remove-user'; userId: number }
 
 const initialState: MemberState = {
   users: environment.demoMode ? INIT_USERS : [],
@@ -86,7 +86,7 @@ export function useMembers() {
     }
   }, [])
 
-  const updateUser = useCallback(async (userId: string, data: Omit<Member, 'id'>) => {
+  const updateUser = useCallback(async (userId: number, data: Omit<Member, 'id'>) => {
     try {
       const updated = await updateMember(userId, data)
       dispatch({ type: 'update-user', userId, data: updated })
@@ -96,7 +96,7 @@ export function useMembers() {
     }
   }, [])
 
-  const removeUser = useCallback(async (userId: string) => {
+  const removeUser = useCallback(async (userId: number) => {
     try {
       await deleteMember(userId)
       dispatch({ type: 'remove-user', userId })

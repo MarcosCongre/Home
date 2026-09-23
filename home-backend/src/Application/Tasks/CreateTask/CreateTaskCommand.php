@@ -10,7 +10,7 @@ readonly class CreateTaskCommand
         public string $title,
         public string $householdId,
         public string $userId,
-        public ?string $assignedMemberId = null
+        public ?int $assignedMemberId = null
     ) {
     }
 }

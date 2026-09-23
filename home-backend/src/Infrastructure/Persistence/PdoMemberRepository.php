@@ -16,24 +16,36 @@ final class PdoMemberRepository implements MemberRepositoryInterface
 
     public function save(Member $member): void
     {
-        $statement = $this->pdo->prepare(
-            'INSERT INTO members (id, household_id, name, avatar, color, created_at, updated_at)
-             VALUES (:id, :householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-             ON DUPLICATE KEY UPDATE name = VALUES(name), avatar = VALUES(avatar), color = VALUES(color), updated_at = CURRENT_TIMESTAMP'
-        );
-        $statement->execute([
-            ':id' => $member->id(),
-            ':householdId' => $member->householdId(),
-            ':name' => $member->name(),
-            ':avatar' => $member->avatar(),
-            ':color' => $member->color(),
-        ]);
+        if ($member->id() > 0) {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO members (id, household_id, name, avatar, color, created_at, updated_at)
+                 VALUES (:id, :householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                 ON DUPLICATE KEY UPDATE name = VALUES(name), avatar = VALUES(avatar), color = VALUES(color), updated_at = CURRENT_TIMESTAMP'
+            );
+            $statement->bindValue(':id', $member->id(), PDO::PARAM_INT);
+        } else {
+            $statement = $this->pdo->prepare(
+                'INSERT INTO members (household_id, name, avatar, color, created_at, updated_at)
+                 VALUES (:householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+            );
+        }
+
+        $statement->bindValue(':householdId', $member->householdId());
+        $statement->bindValue(':name', $member->name());
+        $statement->bindValue(':avatar', $member->avatar());
+        $statement->bindValue(':color', $member->color());
+        $statement->execute();
+
+        if ($member->id() === 0) {
+            $member->assignGeneratedId((int) $this->pdo->lastInsertId());
+        }
     }
 
-    public function findById(string $id): ?Member
+    public function findById(int $id): ?Member
     {
         $statement = $this->pdo->prepare('SELECT * FROM members WHERE id = :id');
-        $statement->execute([':id' => $id]);
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
+        $statement->execute();
         $row = $statement->fetch(PDO::FETCH_ASSOC);
 
         return $row === false ? null : $this->hydrate($row);
@@ -52,17 +64,18 @@ final class PdoMemberRepository implements MemberRepositoryInterface
         return $members;
     }
 
-    public function delete(string $id): void
+    public function delete(int $id): void
     {
         $statement = $this->pdo->prepare('DELETE FROM members WHERE id = :id');
-        $statement->execute([':id' => $id]);
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
+        $statement->execute();
     }
 
     /** @param array<string, mixed> $row */
     private function hydrate(array $row): Member
     {
         return new Member(
-            id: (string) $row['id'],
+            id: (int) $row['id'],
             name: (string) $row['name'],
             avatar: (string) $row['avatar'],
             color: (string) $row['color'],

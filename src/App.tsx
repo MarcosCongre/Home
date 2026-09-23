@@ -20,12 +20,12 @@ const TABS = [
 
 export default function App() {
   const [tab, setTab] = useState('home')
-  const [detailId, setDetailId] = useState<string | null>(null)
+  const [detailId, setDetailId] = useState<number | null>(null)
   const { users, addUser, updateUser, removeUser, loadMembers, error: memberError } = useMembers()
   const { tasks, setTasks, completeTaskById, loadTasks, error: taskError } = useTasks()
   const error = memberError ?? taskError
 
-  const openDetail = (id: string) => {
+  const openDetail = (id: number) => {
     setDetailId(id)
     setTab('detail')
   }

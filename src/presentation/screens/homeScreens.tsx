@@ -14,11 +14,11 @@ import { Badge } from '@/presentation/shared/Badge'
 
 export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
   tasks: Task[]
-  onSelect: (id: string) => void
+  onSelect: (id: number) => void
   users: User[]
-  onToggleComplete: (taskId: string, userId: string) => Promise<void>
+  onToggleComplete: (taskId: number, userId: string) => Promise<void>
 }) {
-  const userOf = (id: string) => users.find(u => u.id === id)
+  const userOf = (id: number | '') => users.find(u => u.id === id)
   const [filter, setFilter] = useState('All')
   const done = tasks.filter(t => t.done).length
   const visible = filter === 'All' ? tasks : tasks.filter(t => t.category === filter)
@@ -103,10 +103,10 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
   )
 }
 
-export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSelect: (id: string) => void; users: User[] }) {
-  const userOf = (id: string) => users.find(u => u.id === id)
+export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSelect: (id: number) => void; users: User[] }) {
+  const userOf = (id: number | '') => users.find(u => u.id === id)
   const [activeDay, setActiveDay] = useState('Mon')
-  const [filterUser, setFilterUser] = useState<string | null>(null)
+  const [filterUser, setFilterUser] = useState<number | null>(null)
 
   const dayTasks = tasks.filter(t =>
     t.day === activeDay && (filterUser === null || t.assignee === filterUser)
@@ -193,7 +193,7 @@ export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSele
 }
 
 export function Notifications({ users }: { users: User[] }) {
-  const userOf = (id: string) => users.find(u => u.id === id)
+  const userOf = (id: number | '') => users.find(u => u.id === id)
   const [dismissed, setDismissed] = useState<string[]>([])
   const visible = NOTIFS.filter(n => !dismissed.includes(n.id))
   const urgent = visible.filter(n => n.urgent)
@@ -416,7 +416,7 @@ export function ConfirmDelete({ user, taskCount, onConfirm, onClose }: {
 }
 
 export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
-  taskId: string
+  taskId: number
   tasks: Task[]
   setTasks: (t: Task[]) => void
   onBack: () => void
@@ -552,13 +552,13 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   users: User[]
   tasks: Task[]
   onAddUser: (u: User) => void
-  onUpdateUser: (userId: string, data: Omit<User, 'id'>) => void
-  onRemoveUser: (userId: string) => void
-  onUnassignTasks: (userId: string) => void
+  onUpdateUser: (userId: number, data: Omit<User, 'id'>) => void
+  onRemoveUser: (userId: number) => void
+  onUnassignTasks: (userId: number) => void
 }) {
-  const [selected, setSelected] = useState<string | null>(null)
+  const [selected, setSelected] = useState<number | null>(null)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
   const uid = useId()
 
   const stats = users.map(u => {
@@ -571,7 +571,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   const selectedStat = selected ? stats.find(u => u.id === selected) : null
   const userTasks = selected ? tasks.filter(t => t.assignee === selected) : []
 
-  const deleteUser = (id: string) => {
+  const deleteUser = (id: number) => {
     onRemoveUser(id)
     onUnassignTasks(id)
     setDeleteTarget(null)

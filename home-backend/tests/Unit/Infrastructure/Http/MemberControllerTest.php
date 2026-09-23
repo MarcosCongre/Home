@@ -33,14 +33,14 @@ final class MemberControllerTest extends TestCase
     {
         $repository = new InMemoryMemberRepository();
         $first = new Member(
-            id: 'member-1',
+            id: 1,
             name: 'Maya',
             avatar: 'M',
             color: '#C4623A',
             householdId: 'house-2'
         );
         $second = new Member(
-            id: 'member-2',
+            id: 2,
             name: 'James',
             avatar: 'J',
             color: '#6B7C4E',
@@ -54,6 +54,6 @@ final class MemberControllerTest extends TestCase
         $members = $controller->list('house-2');
 
         $this->assertCount(2, $members);
-        $this->assertSame(['member-1', 'member-2'], array_map(static fn (array $member): string => $member['id'], $members));
+        $this->assertSame([1, 2], array_map(static fn (array $member): int => $member['id'], $members));
     }
 }

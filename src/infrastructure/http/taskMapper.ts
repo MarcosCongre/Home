@@ -1,14 +1,14 @@
 import type { Task } from '@/domain/tasks/task'
 
 export type TaskDto = {
-  id: string
+  id: number
   title: string
   status: 'pending' | 'completed'
   householdId: string
   createdAt: string
   completedAt: string | null
-  assignedMemberId?: string | null
-  assignee?: string | null
+  assignedMemberId?: number | null
+  assignee?: number | null
   category?: string | null
   recurrence?: string | null
   day?: string | null
@@ -18,6 +18,10 @@ export type TaskDto = {
 }
 
 export function mapTaskDto(dto: TaskDto): Task {
+  if (!Number.isInteger(dto.id) || dto.id <= 0) {
+    throw new Error('Task id must be a positive integer')
+  }
+
   return {
     id: dto.id,
     title: dto.title,

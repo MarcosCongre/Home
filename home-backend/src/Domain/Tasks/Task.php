@@ -9,18 +9,18 @@ use DateTimeImmutable;
 class Task
 {
     public function __construct(
-        private readonly string $id,
+        private int $id,
         private TaskTitle $title,
-        private TaskStatus $status = TaskStatus::PENDING,
         private readonly string $householdId,
         private readonly DateTimeImmutable $createdAt,
+        private TaskStatus $status = TaskStatus::PENDING,
         private ?DateTimeImmutable $completedAt = null,
-        private ?string $assignedMemberId = null
+        private ?int $assignedMemberId = null
     ) {
     }
 
     public static function create(
-        string $id,
+        int $id,
         string $title,
         string $householdId,
         DateTimeImmutable $createdAt
@@ -44,7 +44,7 @@ class Task
         $this->completedAt = new DateTimeImmutable();
     }
 
-    public function update(string $title, ?string $assignedMemberId, ?TaskStatus $status = null): void
+    public function update(string $title, ?int $assignedMemberId, ?TaskStatus $status = null): void
     {
         $this->title = new TaskTitle($title);
         $this->assignedMemberId = $assignedMemberId;
@@ -55,7 +55,7 @@ class Task
         }
     }
 
-    public function id(): string
+    public function id(): int
     {
         return $this->id;
     }
@@ -85,8 +85,17 @@ class Task
         return $this->completedAt;
     }
 
-    public function assignedMemberId(): ?string
+    public function assignedMemberId(): ?int
     {
         return $this->assignedMemberId;
+    }
+
+    public function assignGeneratedId(int $id): void
+    {
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('Task id must be a positive integer.');
+        }
+
+        $this->id = $id;
     }
 }

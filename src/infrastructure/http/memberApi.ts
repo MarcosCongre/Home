@@ -7,6 +7,10 @@ export type MemberDto = Member & {
 }
 
 function normalizeMember(member: MemberDto): Member {
+  if (!Number.isInteger(member.id) || member.id <= 0) {
+    throw new Error('Member id must be a positive integer')
+  }
+
   return {
     id: member.id,
     name: member.name,
@@ -35,7 +39,7 @@ export async function createMember(data: Omit<Member, 'id'> & { householdId?: st
   return normalizeMember(payload)
 }
 
-export async function updateMember(userId: string, data: Omit<Member, 'id'> & { householdId?: string }): Promise<Member> {
+export async function updateMember(userId: number, data: Omit<Member, 'id'> & { householdId?: string }): Promise<Member> {
   const payload = await request<MemberDto>(`${environment.apiBaseUrl}/members/${encodeURIComponent(userId)}`, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -49,7 +53,7 @@ export async function updateMember(userId: string, data: Omit<Member, 'id'> & { 
   return normalizeMember(payload)
 }
 
-export async function deleteMember(userId: string): Promise<void> {
+export async function deleteMember(userId: number): Promise<void> {
   await request<void>(`${environment.apiBaseUrl}/members/${encodeURIComponent(userId)}`, {
     method: 'DELETE',
   })

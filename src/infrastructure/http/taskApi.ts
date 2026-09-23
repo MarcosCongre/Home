@@ -8,7 +8,7 @@ export async function listTasks(): Promise<Task[]> {
   return payload.map(mapTaskDto)
 }
 
-export async function completeTask(taskId: string, userId: string): Promise<Task> {
+export async function completeTask(taskId: number, userId: string): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}/complete`, {
     method: 'PATCH',
     body: JSON.stringify({ userId }),
@@ -30,7 +30,7 @@ export async function createTask(data: { title: string; assignee?: string }): Pr
   return mapTaskDto(payload)
 }
 
-export async function updateTask(taskId: string, data: { title?: string; assignee?: string; status?: TaskDto['status'] }): Promise<Task> {
+export async function updateTask(taskId: number, data: { title?: string; assignee?: number | ''; status?: TaskDto['status'] }): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}`, {
     method: 'PATCH',
     body: JSON.stringify({
@@ -42,7 +42,7 @@ export async function updateTask(taskId: string, data: { title?: string; assigne
   return mapTaskDto(payload)
 }
 
-export async function deleteTask(taskId: string): Promise<void> {
+export async function deleteTask(taskId: number): Promise<void> {
   await request<void>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}`, {
     method: 'DELETE',
   })

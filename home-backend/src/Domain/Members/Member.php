@@ -7,7 +7,7 @@ namespace App\Domain\Members;
 final class Member
 {
     public function __construct(
-        private readonly string $id,
+        private int $id,
         private string $name,
         private string $avatar,
         private string $color,
@@ -17,7 +17,7 @@ final class Member
     }
 
     public static function create(
-        string $id,
+        int $id,
         string $name,
         string $avatar,
         string $color,
@@ -32,7 +32,7 @@ final class Member
         );
     }
 
-    public function id(): string
+    public function id(): int
     {
         return $this->id;
     }
@@ -55,6 +55,15 @@ final class Member
     public function householdId(): string
     {
         return $this->householdId;
+    }
+
+    public function assignGeneratedId(int $id): void
+    {
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('Member id must be a positive integer.');
+        }
+
+        $this->id = $id;
     }
 
     public function update(string $name, string $avatar, string $color): void

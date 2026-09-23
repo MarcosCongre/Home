@@ -9,7 +9,7 @@ Validar de forma reproducible el sistema completo usando la base de datos local 
 - El backend dispone de pruebas PHPUnit unitarias y de integracion en `home-backend/tests/`.
 - El frontend tiene `npm run build`, pero no dispone actualmente de un script de lint, typecheck o pruebas de navegador.
 - La documentacion indica que la integracion real cubre principalmente la carga y completado de tareas; creacion, edicion y miembros pueden conservar comportamiento local.
-- `home-backend/docker-compose.yml` declara `MYSQL_DATABASE=home` para MySQL, mientras el servicio `app` declara `DB_DATABASE=sodapp`. Esta configuracion debe verificarse y corregirse o documentarse antes de ejecutar pruebas contra MySQL.
+- `home-backend/docker-compose.yml` y `home-backend/.env.example` declaran `home` como base de datos. Esta configuración debe mantenerse alineada con la instancia local antes de ejecutar pruebas contra MySQL.
 - La validacion debe usar datos de prueba identificables y operaciones reversibles para no perder la base poblada.
 
 ## Objetivo de salida
@@ -32,7 +32,7 @@ Emitir uno de estos veredictos:
   - Confirmar versiones disponibles de PHP, Composer, Node/npm, Docker y MySQL.
   - Confirmar que la base local contiene los datos esperados y registrar un inventario inicial sin exponer secretos.
   - Crear un respaldo o snapshot antes de ejecutar operaciones mutables.
-  - Resolver la diferencia `home`/`sodapp` de configuracion o dejar documentado cual valor prevalece en runtime.
+  - Confirmar que `home` prevalece como base de datos en runtime y que no existen variables externas que la sobrescriban.
   - Confirmar origenes CORS, puertos y variables de entorno usadas por frontend y backend.
 - **Salida:** checklist de entorno, inventario inicial y respaldo verificable.
 
@@ -159,7 +159,7 @@ Emitir uno de estos veredictos:
 
 ## Riesgos y decisiones pendientes
 
-- Determinar si la discrepancia de nombres de base `home`/`sodapp` es un error real de despliegue o una variable sobrescrita externamente.
+- Confirmar que la base `home` es la fuente de verdad también en el entorno de despliegue.
 - Confirmar si miembros, creacion y edicion de tareas deben persistir en produccion; el plan no debe declarar aprobado un flujo que aun sea local si es requisito productivo.
 - Definir umbrales de rendimiento, carga y seguridad; no quedan cubiertos por `composer test` ni `npm run build`.
 - Definir quien aprueba el informe y quien ejecuta rollback si falla una prueba productiva.
