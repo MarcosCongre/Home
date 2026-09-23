@@ -22,6 +22,9 @@ final class Router
     {
         $method = strtoupper((string) ($request['REQUEST_METHOD'] ?? 'GET'));
         $path = (string) ($request['PATH_INFO'] ?? '/');
+        if ($path === '/' && isset($request['REQUEST_URI'])) {
+            $path = (string) parse_url((string) $request['REQUEST_URI'], PHP_URL_PATH);
+        }
 
         if ($method === 'POST' && $path === '/tasks') {
             $controller = new TaskController($this->taskRepository);

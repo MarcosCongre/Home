@@ -6,7 +6,7 @@ Fecha de ejecución: 2026-09-23 (hora local observada)
 
 | Componente | Resultado | Evidencia |
 |---|---|---|
-| PHP | OK | PHP 8.2.33 CLI |
+| PHP | BLOQUEADO | PHP 8.2.33 CLI; la plataforma objetivo es PHP 8.3.x |
 | Composer | OK | Composer 2.8.12 |
 | Node.js | OK | v22.15.0 |
 | npm | OK | 10.9.2 |
@@ -70,4 +70,4 @@ El cambio se aplicó de forma coordinada en backend, migración, pruebas y front
 
 T1 queda completada como diagnóstico y protección de datos. `home` es la fuente de verdad confirmada para esta validación y la adaptación de IDs `INT` quedó implementada. También debe confirmarse cómo se inyectan las variables al proceso PHP antes de ejecutar pruebas contra MySQL.
 
-No se ejecutó ninguna operación mutable sobre la base `home`. La suite PHPUnit de T2 continúa bloqueada por el entorno PHP 8.2/`openssl`, según [t2-suite-backend.md](t2-suite-backend.md).
+No se ejecutó ninguna operación mutable sobre la base `home`. La suite PHPUnit de T2 continúa bloqueada porque el CLI disponible es PHP 8.2.33 sin `openssl`; se requiere PHP 8.3.x con `openssl`, según [t2-suite-backend.md](t2-suite-backend.md).

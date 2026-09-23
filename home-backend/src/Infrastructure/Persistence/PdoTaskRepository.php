@@ -48,10 +48,18 @@ final class PdoTaskRepository implements TaskRepositoryInterface
             );
             $statement->bindValue(':id', $task->id(), PDO::PARAM_INT);
         } else {
-            $statement = $this->pdo->prepare(
-                'INSERT INTO tasks (title, status, household_id, assigned_member_id, created_at, completed_at)
-                 VALUES (:title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt)'
-            );
+            if ($task->id() > 0) {
+                $statement = $this->pdo->prepare(
+                    'INSERT INTO tasks (id, title, status, household_id, assigned_member_id, created_at, completed_at)
+                     VALUES (:id, :title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt)'
+                );
+                $statement->bindValue(':id', $task->id(), PDO::PARAM_INT);
+            } else {
+                $statement = $this->pdo->prepare(
+                    'INSERT INTO tasks (title, status, household_id, assigned_member_id, created_at, completed_at)
+                     VALUES (:title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt)'
+                );
+            }
         }
 
         $statement->bindValue(':title', $task->title()->value());

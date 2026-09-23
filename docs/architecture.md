@@ -43,7 +43,7 @@ El archivo `src/App.tsx` concentra los componentes principales: `Dashboard`, `Ca
 
 ### Stack
 
-- PHP 8.2+
+- PHP 8.3+
 - Composer
 - PHPUnit
 - SQLite para persistencia local (PDO) y repositorio en memoria para pruebas

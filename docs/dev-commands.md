@@ -26,6 +26,8 @@ composer install
 composer test
 ```
 
+El backend requiere PHP 8.3 o superior y la extensión `openssl` habilitada. En Windows, el CLI validado usa `C:\php83\php.exe`; hay que anteponer `C:\php83` al `PATH` si otra instalación de PHP aparece primero. Los comandos Composer deben ejecutarse desde `home-backend`.
+
 También puede ejecutarse con PHP interno:
 
 ```bash

@@ -24,7 +24,7 @@ Este plan simula una nueva tarea de trabajo independiente del plan principal del
 - [x] Controller HTTP y routing de `/members`.
 - [x] Integración frontend con `memberApi` y `useMembers`.
 - [x] Validación de compilación del frontend con `npm run build` (éxito).
-- [ ] Validación de tests PHP 8.2.33 del backend miembro (requerido por el entorno actual).
+- [ ] Validación de tests PHP 8.3.x del backend miembro (requerido por la plataforma objetivo).
 
 ## Objetivo funcional
 
@@ -112,15 +112,15 @@ home-backend/
 ### Fase 5 — Testing y validación
 
 - [x] comprobación de compilación frontend del flujo de miembros
-- [ ] pruebas unitarias del dominio de miembros ejecutadas con PHP 8.2.33
-- [ ] pruebas de aplicación para casos de creación y actualización ejecutadas en PHP 8.2.33
-- [ ] pruebas de integración HTTP para member controller ejecutadas en PHP 8.2.33
+- [ ] pruebas unitarias del dominio de miembros ejecutadas con PHP 8.3.x
+- [ ] pruebas de aplicación para casos de creación y actualización ejecutadas en PHP 8.3.x
+- [ ] pruebas de integración HTTP para member controller ejecutadas en PHP 8.3.x
 - [ ] validación de compatibilidad con el flujo actual de tareas a nivel backend real
 
 ### Estado de verificación actual
 
 - Validado: `npm run build` en el frontend devuelve éxito.
-- Pendiente: ejecutar PHPUnit del backend en entorno con PHP 8.2.33, que es la versión requerida por este proyecto y por el entorno disponible.
+- Pendiente: ejecutar PHPUnit del backend en entorno con PHP 8.3.x y `openssl` habilitado.
 - Observación funcional: la relación actual es compatible con `userId` en tareas y `householdId` en miembros, pero no hay un objeto `memberId` persistido dentro del modelo de `Task` del backend; esto es compatible con la arquitectura actual pero no es un vínculo de dominio completo.
 
 ## Criterios de aceptación

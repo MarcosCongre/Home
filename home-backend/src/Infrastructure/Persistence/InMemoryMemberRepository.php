@@ -41,10 +41,7 @@ final class InMemoryMemberRepository implements MemberRepositoryInterface
             static fn (Member $member): bool => $member->householdId() === $householdId
         ));
 
-        usort(
-            $members,
-            static fn (Member $a, Member $b): int => strcmp($a->name(), $b->name())
-        );
+        usort($members, static fn (Member $a, Member $b): int => $a->id() <=> $b->id());
 
         return $members;
     }

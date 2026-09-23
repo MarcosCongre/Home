@@ -33,3 +33,18 @@ composer test
 ```
 
 La suite solo podrá marcarse como pasada cuando Composer y PHPUnit completen la ejecución y se registren sus contadores de tests, errores y fallos.
+
+## Reintento tras actualizar el contrato a PHP 8.3
+
+Se actualizaron `home-backend/composer.json` a `php: ^8.3` y `home-backend/Dockerfile` a `php:8.3-cli`. La repetición de `composer validate` y la sincronización del lock no pudieron completarse porque el CLI disponible continúa siendo PHP 8.2.33 y no carga `openssl`.
+
+El entorno PHP 8.3.35 quedó configurado con `openssl`, `mbstring`, `pdo_mysql`, `pdo_sqlite` y `sqlite3`. Composer instaló las dependencias desde el lock y `composer check-platform-reqs` confirmó los requisitos disponibles.
+
+La suite se ejecutó desde `home-backend` con el resultado:
+
+```text
+PHPUnit 11.5.56
+OK (20 tests, 62 assertions)
+```
+
+Durante esta ejecución se corrigieron tres fallos funcionales descubiertos por PHPUnit: resolución de rutas mediante `REQUEST_URI`, persistencia SQLite de IDs explícitos y orden determinista de miembros por ID.
