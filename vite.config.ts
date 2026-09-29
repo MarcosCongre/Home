@@ -39,6 +39,14 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, ''),
         },
+        '/members': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
+        '/tasks': {
+          target: 'http://localhost:8000',
+          changeOrigin: true,
+        },
       },
       watch: {
         ignored: [
@@ -92,7 +100,7 @@ function figmaSiteConfiguration(config: FigmaSiteConfiguration): Plugin {
     return html.replace(`<!-- ${slotName} -->`, content)
   }
 
-  const title = config.title ?? "Figma Make App"
+  const title = config.title ?? "HOME"
   const description = config.description ?? ''
   const favicon = config.icons?.icon ?? ''
   const socialImage = config.openGraph?.image ?? ''

@@ -8,6 +8,18 @@ use App\Infrastructure\Http\Router;
 use App\Infrastructure\Persistence\PdoMemberRepository;
 use App\Infrastructure\Persistence\PdoTaskRepository;
 
+$envFile = dirname(__DIR__) . '/.env';  
+if (is_file($envFile)) {  
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {  
+        $line = trim($line);  
+        if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {  
+            continue;  
+        }  
+        [$key, $value] = explode('=', $line, 2);  
+        putenv(trim($key) . '=' . trim($value));  
+    }  
+}
+
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $allowedOrigins = array_filter(array_map('trim', explode(',', getenv('CORS_ALLOWED_ORIGINS') ?: '*')));
 if (in_array('*', $allowedOrigins, true) || in_array($origin, $allowedOrigins, true)) {
@@ -24,14 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 $dsn = getenv('DB_DSN') ?: sprintf(
     'mysql:host=%s;port=%s;dbname=%s;charset=%s',
-    getenv('DB_HOST') ?: 'mysql',
-    getenv('DB_PORT') ?: '3306',
-    getenv('DB_DATABASE') ?: 'home',
-    getenv('DB_CHARSET') ?: 'utf8mb4'
+    getenv('DB_HOST'),
+    getenv('DB_PORT'),
+    getenv('DB_DATABASE'),
+    getenv('DB_CHARSET')
 );
 
 try {
-    $pdo = new PDO($dsn, getenv('DB_USERNAME') ?: 'home', getenv('DB_PASSWORD') ?: 'home', [
+    $pdo = new PDO($dsn, getenv('DB_USERNAME') ?: 'home', getenv('DB_PASSWORD') ?: '', [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
