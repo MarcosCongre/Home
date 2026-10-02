@@ -11,12 +11,13 @@ import {
 } from '@/infrastructure/demo/demoData'
 import { Avatar } from '@/presentation/shared/Avatar'
 import { Badge } from '@/presentation/shared/Badge'
+import { TaskModal, type TaskFormData } from '@/presentation/screens/TaskModal'
 
 export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
   tasks: Task[]
   onSelect: (id: number) => void
   users: User[]
-  onToggleComplete: (taskId: number, userId: string) => Promise<void>
+  onToggleComplete: (taskId: number, userId: number) => Promise<void>
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [filter, setFilter] = useState('All')
@@ -74,7 +75,7 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
               className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm active:scale-[0.99] transition-transform"
             >
               <button
-                onClick={() => void onToggleComplete(task.id, task.assignee || 'user-demo')}
+                onClick={() => void onToggleComplete(task.id, task.assignee || 0)}
                 className="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
                 style={task.done
                   ? { background: '#6B7C4E', borderColor: '#6B7C4E' }
@@ -103,11 +104,17 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
   )
 }
 
-export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSelect: (id: number) => void; users: User[] }) {
+export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, onUpdateTask }: {
+  tasks: Task[]
+  users: User[]
+  onSelect: (id: number) => void
+  onCreateTask: (data: TaskFormData) => Promise<void>
+  onUpdateTask: (id: number, data: TaskFormData) => Promise<void>
+}) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [activeDay, setActiveDay] = useState('Mon')
   const [filterUser, setFilterUser] = useState<number | null>(null)
-
+  const [taskModal, setTaskModal] = useState<'add' | Task | null>(null)
   const dayTasks = tasks.filter(t =>
     t.day === activeDay && (filterUser === null || t.assignee === filterUser)
   )
@@ -115,8 +122,19 @@ export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSele
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
-        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Week of Sep 15</p>
-        <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">Calendar</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Week of Sep 15</p>
+            <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">Calendar</h2>
+          </div>
+          <button
+            onClick={() => setTaskModal('add')}
+            className="w-9 h-9 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
+          >
+            +
+          </button>
+        </div>
+
         <div className="flex gap-1.5 mt-4">
           {DAYS.map(d => (
             <button
@@ -153,6 +171,7 @@ export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSele
         </div>
       </div>
 
+
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
         {dayTasks.length === 0 && (
           <div className="text-center text-[#A89880] text-sm pt-10">No tasks for {activeDay}</div>
@@ -163,7 +182,7 @@ export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSele
           return (
             <button
               key={task.id}
-              onClick={() => onSelect(task.id)}
+              onClick={() => setTaskModal(task)}
               className="w-full text-left bg-white rounded-2xl overflow-hidden shadow-sm flex active:scale-[0.99] transition-transform"
             >
               <div className="w-1 self-stretch" style={{ background: catColor }} />
@@ -188,12 +207,30 @@ export function CalendarView({ tasks, onSelect, users }: { tasks: Task[]; onSele
           )
         })}
       </div>
+      {taskModal !== null && (
+        <TaskModal
+          initial={taskModal === 'add' ? undefined : taskModal}
+          defaultDay={activeDay}
+          users={users}
+          onClose={() => setTaskModal(null)}
+          onSave={async (data) => {
+            if (taskModal === 'add') {
+              await onCreateTask(data)
+              setActiveDay(data.day)
+              setFilterUser(data.assignee === '' ? null : data.assignee)
+            } else {
+              await onUpdateTask(taskModal.id, data)
+            }
+            setTaskModal(null)
+          }}
+        />
+      )}
     </div>
   )
 }
 
 export function Notifications({ users }: { users: User[] }) {
-  const userOf = (id: number | '') => users.find(u => u.id === id)
+  const userOf = (id: number | 0) => users.find(u => u.id === id)
   const [dismissed, setDismissed] = useState<string[]>([])
   const visible = NOTIFS.filter(n => !dismissed.includes(n.id))
   const urgent = visible.filter(n => n.urgent)

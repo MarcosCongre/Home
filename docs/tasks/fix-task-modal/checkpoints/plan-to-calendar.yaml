@@ -1,0 +1,73 @@
+metadata:
+  generated: "2026-10-01"
+  source_plan: "docs/tasks/fix-task-modal/plan.md"
+  target_tasks: "docs/tasks/fix-task-modal/plan.md (desglose inline)"
+
+summary:
+  total_plan_items: 4
+  covered_plan_items: 4
+  missing_plan_items: 0
+  coverage_percentage: 100.0
+  total_tasks_generated: 4
+  orphan_tasks: 0
+
+phases:
+  - phase_id: "Phase-1"
+    phase_name: "Contrato de operaciones"
+    items:
+      - item_id: "1"
+        description: "Alinear tipos de create/update entre useTasks y taskApi."
+        tasks:
+          - task_id: "T001"
+            description: "Cambiar createTask a payload de objeto y alinear updateTask/API."
+        notes: ""
+  - phase_id: "Phase-2"
+    phase_name: "Vista de calendario y conexión"
+    items:
+      - item_id: "2"
+        description: "Integrar TaskModal en CalendarView y conservar controles."
+        tasks:
+          - task_id: "T002"
+            description: "Actualizar CalendarView, cabecera, estado, tarjetas y modal."
+        notes: ""
+      - item_id: "3"
+        description: "Conectar callbacks de tareas desde App.tsx."
+        tasks:
+          - task_id: "T003"
+            description: "Pasar createTask y updateTask a CalendarView."
+        notes: ""
+  - phase_id: "Phase-3"
+    phase_name: "Verificación"
+    items:
+      - item_id: "4"
+        description: "Verificar tipos, build y criterios funcionales del flujo."
+        tasks:
+          - task_id: "T004"
+            description: "Ejecutar typecheck/build y revisar los criterios de integración."
+        notes: ""
+
+missing_plan_items: []
+orphan_tasks: []
+
+upstream_trace:
+  - plan_item: "1"
+    source_requirements: ["REQ-005", "REQ-006"]
+    tasks: ["T001"]
+    full_trace: "REQ-005,REQ-006 -> Phase-1.1 -> T001"
+  - plan_item: "2"
+    source_requirements: ["REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-006"]
+    tasks: ["T002"]
+    full_trace: "REQ-001,REQ-002,REQ-003,REQ-004,REQ-006 -> Phase-2.2 -> T002"
+  - plan_item: "3"
+    source_requirements: ["REQ-004", "REQ-005"]
+    tasks: ["T003"]
+    full_trace: "REQ-004,REQ-005 -> Phase-2.3 -> T003"
+  - plan_item: "4"
+    source_requirements: ["REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006"]
+    tasks: ["T004"]
+    full_trace: "REQ-001,REQ-002,REQ-003,REQ-004,REQ-005,REQ-006 -> Phase-3.4 -> T004"
+
+validation:
+  passed: true
+  errors: []
+  warnings: []

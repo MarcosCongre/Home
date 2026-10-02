@@ -22,7 +22,7 @@ export default function App() {
   const [tab, setTab] = useState('home')
   const [detailId, setDetailId] = useState<number | null>(null)
   const { users, addUser, updateUser, removeUser, loadMembers, error: memberError } = useMembers()
-  const { tasks, setTasks, completeTaskById, loadTasks, error: taskError } = useTasks()
+  const { tasks, setTasks, completeTaskById, loadTasks, createTask, updateTask, error: taskError } = useTasks()
   const error = memberError ?? taskError
 
   const openDetail = (id: number) => {
@@ -80,7 +80,13 @@ export default function App() {
             ) : tab === 'home' ? (
               <Dashboard tasks={tasks} onSelect={openDetail} users={users} onToggleComplete={completeTaskById} />
             ) : tab === 'calendar' ? (
-              <CalendarView tasks={tasks} onSelect={openDetail} users={users} />
+              <CalendarView
+                tasks={tasks}
+                onSelect={openDetail}
+                users={users}
+                onCreateTask={createTask}
+                onUpdateTask={updateTask}
+              />
             ) : tab === 'alerts' ? (
               <Notifications users={users} />
             ) : (

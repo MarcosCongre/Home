@@ -5,6 +5,16 @@ import { INIT_TASKS } from '@/infrastructure/demo/demoData'
 import { environment } from '@/infrastructure/config/environment'
 import { completeTask as completeTaskRequest, createTask as createTaskRequest, deleteTask as deleteTaskRequest, listTasks, updateTask as updateTaskRequest } from '@/infrastructure/http/taskApi'
 
+type TaskFormInput = {
+  title: string
+  assignee: number | ''
+  day: string
+  time: string
+  category: string
+  recurrence: string
+  priority: Task['priority']
+}
+
 type TaskState = {
   tasks: Task[]
   isLoading: boolean
@@ -113,42 +123,65 @@ export function useTasks() {
     }
   }, [])
 
-  const createTask = useCallback(async (title: string, assignee: number | '' = '') => {
-    const created = await createTaskRequest({ title, assignee })
-    dispatch({ type: 'set-tasks', tasks: [...state.tasks, created] })
-    return created
-  }, [state.tasks])
+  const createTask = useCallback(
+    async (data: TaskFormInput) => {
+      const created = await createTaskRequest(data)
+      const taskWithFormData = {
+        ...created,
+        ...data,
+        assignee: data.assignee,
+      }
 
-  const updateTaskRequestById = useCallback(async (taskId: number, data: { title?: string; assignee?: number | ''; status?: 'pending' | 'completed' }) => {
+      dispatch({
+        type: 'set-tasks',
+        tasks: [...state.tasks, taskWithFormData]
+      })
+    }, [state.tasks]
+  )
+
+  const updateTaskRequestById = useCallback(
+    async (
+      taskId: number,
+      data: TaskFormInput & { status?: 'pending' | 'completed' }
+    ) => {
     const updated = await updateTaskRequest(taskId, data)
-    dispatch({ type: 'replace-task', task: updated })
-    return updated
+    dispatch({
+      type: 'replace-task',
+      task: { ...updated, ...data, assignee: data.assignee },
+    })
   }, [])
 
   const deleteTask = useCallback(async (taskId: number) => {
     await deleteTaskRequest(taskId)
-    dispatch({ type: 'set-tasks', tasks: state.tasks.filter(task => task.id !== taskId) })
+    dispatch({
+      type: 'set-tasks',
+      tasks: state.tasks.filter(task => task.id !== taskId) })
   }, [state.tasks])
 
-  const completeTaskById = useCallback(async (taskId: number, userId: string) => {
-    const current = state.tasks.find(task => task.id === taskId)
-    if (!current) return
+  const completeTaskById = useCallback(
+    async (
+      taskId: number,
+      userId: string
+    ) => {
+      const current = state.tasks.find(task => task.id === taskId)
+      if (!current) return
 
-    const nextDone = !current.done
+      const nextDone = !current.done
 
-    updateTaskOptimistically(taskId, task => ({ ...task, done: nextDone }))
+      updateTaskOptimistically(taskId, task => ({ ...task, done: nextDone }))
 
-    if (!nextDone) {
-      return
-    }
+      if (!nextDone) {
+        return
+      }
 
-    try {
-      const completedTask = await completeTaskRequest(taskId, userId)
-      replaceTask(completedTask)
-    } catch {
-      updateTaskOptimistically(taskId, () => current)
-    }
-  }, [replaceTask, state.tasks, updateTaskOptimistically])
+      try {
+        const completedTask = await completeTaskRequest(taskId, userId)
+        replaceTask(completedTask)
+      } catch {
+        updateTaskOptimistically(taskId, () => current)
+      }
+    }, [replaceTask, state.tasks, updateTaskOptimistically]
+  )
 
   useEffect(() => {
     void loadTasks()

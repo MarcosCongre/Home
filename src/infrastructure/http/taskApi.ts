@@ -17,25 +17,57 @@ export async function completeTask(taskId: number, userId: string): Promise<Task
   return mapTaskDto(payload)
 }
 
-export async function createTask(data: { title: string; assignee?: string }): Promise<Task> {
+export async function createTask(
+  data: {
+    title: string;
+    assignee?: number | '';
+    day?: string;
+    time?: string;
+    category?: string;
+    recurrence?: string;
+    priority?: string;
+  }
+): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks`, {
     method: 'POST',
     body: JSON.stringify({
       title: data.title,
       householdId: environment.householdId,
       assignedMemberId: data.assignee || null,
+      day: data.day,
+      time: data.time,
+      category: data.category,
+      recurrence: data.recurrence,
+      priority: data.priority
     }),
   })
 
   return mapTaskDto(payload)
 }
 
-export async function updateTask(taskId: number, data: { title?: string; assignee?: number | ''; status?: TaskDto['status'] }): Promise<Task> {
+export async function updateTask(
+  taskId: number,
+  data: {
+    title?: string;
+    assignee?: number | '';
+    status?: TaskDto['status'];
+    day?: string;
+    time?: string;
+    category?: string;
+    recurrence?: string;
+    priority?: string;
+  }
+): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}`, {
     method: 'PATCH',
     body: JSON.stringify({
       ...data,
       assignedMemberId: data.assignee || null,
+      day: data.day,
+      time: data.time,
+      category: data.category,
+      recurrence: data.recurrence,
+      priority: data.priority
     }),
   })
 

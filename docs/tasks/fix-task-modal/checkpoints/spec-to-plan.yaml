@@ -1,0 +1,94 @@
+metadata:
+  generated: "2026-10-01"
+  source_spec: "docs/tasks/fix-task-modal/brief.md"
+  target_plan: "docs/tasks/fix-task-modal/plan.md"
+
+summary:
+  total_requirements: 6
+  covered_requirements: 6
+  missing_requirements: 0
+  coverage_percentage: 100.0
+
+requirements:
+  - req_id: "REQ-001"
+    req_description: "CalendarView usa el contrato solicitado y conserva solo el estado de calendario permitido."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Vista de calendario y conexión"
+      items:
+        - item_id: "2"
+          description: "Actualizar el contrato y estado de CalendarView."
+    notes: ""
+  - req_id: "REQ-002"
+    req_description: "El calendario muestra una sola cabecera con acción de creación."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Vista de calendario y conexión"
+      items:
+        - item_id: "2"
+          description: "Eliminar el encabezado copiado y mantener una sola cabecera."
+    notes: ""
+  - req_id: "REQ-003"
+    req_description: "Se conservan días, filtros, tarjetas y empty state; las tarjetas abren edición modal."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Vista de calendario y conexión"
+      items:
+        - item_id: "2"
+          description: "Mantener controles y hacer que las tarjetas abran el modal."
+    notes: ""
+  - req_id: "REQ-004"
+    req_description: "TaskModal soporta creación y edición con guardado por callback y cierre."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-2"
+      phase_name: "Vista de calendario y conexión"
+      items:
+        - item_id: "2"
+          description: "Renderizar TaskModal y enrutar el guardado."
+        - item_id: "3"
+          description: "Conectar callbacks desde App.tsx."
+    notes: ""
+  - req_id: "REQ-005"
+    req_description: "Crear y actualizar tareas reciben y envían todos los campos del formulario."
+    priority: "P1"
+    plan_mapping:
+      phase: "Phase-1"
+      phase_name: "Contrato de operaciones"
+      items:
+        - item_id: "1"
+          description: "Alinear operaciones useTasks y payload de API."
+      notes: "App.tsx conecta ambas funciones en el paso 3."
+  - req_id: "REQ-006"
+    req_description: "Se preservan estilos existentes y la persistencia backend queda fuera de alcance."
+    priority: "P1"
+    plan_mapping:
+      phases:
+        - phase: "Phase-1"
+          phase_name: "Contrato de operaciones"
+          items:
+            - item_id: "1"
+              description: "No ampliar el alcance al backend."
+        - phase: "Phase-2"
+          phase_name: "Vista de calendario y conexión"
+          items:
+            - item_id: "2"
+              description: "Preservar estilos mientras se integra el modal."
+        - phase: "Phase-3"
+          phase_name: "Verificación"
+          items:
+            - item_id: "4"
+              description: "Validar y registrar la limitación backend."
+    notes: ""
+
+missing_requirements: []
+orphan_plan_items: []
+
+validation:
+  passed: true
+  errors: []
+  warnings:
+    - "Los REQ-XXX se normalizaron a partir de los puntos explícitos del brief, que no contenía identificadores REQ."
