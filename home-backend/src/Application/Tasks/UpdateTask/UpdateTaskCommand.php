@@ -12,7 +12,12 @@ readonly class UpdateTaskCommand
         public int $taskId,
         public string $title,
         public ?int $assignedMemberId = null,
-        public ?TaskStatus $status = null
+        public ?TaskStatus $status = null,
+        public ?string $day = null,
+        public ?string $time = null,
+        public ?string $category = null,
+        public ?string $recurrence = null,
+        public ?string $priority = null
     ) {
     }
 }

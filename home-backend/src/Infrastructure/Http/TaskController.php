@@ -34,7 +34,12 @@ final class TaskController
             title: (string) ($payload['title'] ?? ''),
             householdId: (string) ($payload['householdId'] ?? ''),
             userId: (string) ($payload['userId'] ?? ''),
-            assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null)
+            assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null),
+            day: $this->optionalValidatedDay($payload['day'] ?? null),
+            time: $this->optionalString($payload['time'] ?? null),
+            category: $this->optionalString($payload['category'] ?? null),
+            recurrence: $this->optionalString($payload['recurrence'] ?? null),
+            priority: $this->optionalValidatedPriority($payload['priority'] ?? null)
         ));
 
         return $this->serializeTask($task);
@@ -48,7 +53,12 @@ final class TaskController
             taskId: $taskId,
             title: (string) ($payload['title'] ?? ''),
             assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null),
-            status: $status
+            status: $status,
+            day: $this->optionalValidatedDay($payload['day'] ?? null),
+            time: $this->optionalString($payload['time'] ?? null),
+            category: $this->optionalString($payload['category'] ?? null),
+            recurrence: $this->optionalString($payload['recurrence'] ?? null),
+            priority: $this->optionalValidatedPriority($payload['priority'] ?? null)
         )));
     }
 
@@ -92,6 +102,11 @@ final class TaskController
             'createdAt' => $task->createdAt()->format(DATE_ATOM),
             'completedAt' => $task->completedAt()?->format(DATE_ATOM),
             'assignedMemberId' => $task->assignedMemberId(),
+            'day' => $task->day(),
+            'time' => $task->time(),
+            'category' => $task->category(),
+            'recurrence' => $task->recurrence(),
+            'priority' => $task->priority(),
         ];
     }
 
@@ -110,5 +125,44 @@ final class TaskController
         }
 
         throw new \InvalidArgumentException('Entity ids must be positive integers.');
+    }
+
+    private function optionalString(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_string($value) ? $value : (string) $value;
+    }
+
+    private function optionalValidatedDay(mixed $value): ?string
+    {
+        $normalized = $this->optionalString($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $validDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        if (!in_array($normalized, $validDays, true)) {
+            throw new \InvalidArgumentException(sprintf('Invalid day "%s". Allowed values: %s.', $normalized, implode(', ', $validDays)));
+        }
+
+        return $normalized;
+    }
+
+    private function optionalValidatedPriority(mixed $value): ?string
+    {
+        $normalized = $this->optionalString($value);
+        if ($normalized === null) {
+            return null;
+        }
+
+        $validPriorities = ['low', 'med', 'high'];
+        if (!in_array($normalized, $validPriorities, true)) {
+            throw new \InvalidArgumentException(sprintf('Invalid priority "%s". Allowed values: %s.', $normalized, implode(', ', $validPriorities)));
+        }
+
+        return $normalized;
     }
 }

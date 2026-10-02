@@ -21,11 +21,24 @@ final class CreateTaskHandler
             id: 0,
             title: $command->title,
             householdId: $command->householdId,
-            createdAt: new DateTimeImmutable()
+            createdAt: new DateTimeImmutable(),
+            day: $command->day,
+            time: $command->time,
+            category: $command->category,
+            recurrence: $command->recurrence,
+            priority: $command->priority
         );
 
         if ($command->assignedMemberId !== null) {
-            $task->update($command->title, $command->assignedMemberId);
+            $task->update(
+                title: $command->title,
+                assignedMemberId: $command->assignedMemberId,
+                day: $command->day,
+                time: $command->time,
+                category: $command->category,
+                recurrence: $command->recurrence,
+                priority: $command->priority
+            );
         }
 
         $this->taskRepository->save($task);

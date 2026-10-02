@@ -21,7 +21,16 @@ final class UpdateTaskHandler
             throw new \RuntimeException('Task not found.');
         }
 
-        $task->update($command->title, $command->assignedMemberId, $command->status);
+        $task->update(
+            title: $command->title,
+            assignedMemberId: $command->assignedMemberId,
+            status: $command->status,
+            day: $command->day,
+            time: $command->time,
+            category: $command->category,
+            recurrence: $command->recurrence,
+            priority: $command->priority
+        );
         $this->taskRepository->save($task);
 
         return $task;
