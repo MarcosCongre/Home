@@ -112,11 +112,12 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
   onUpdateTask: (id: number, data: TaskFormData) => Promise<void>
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
-  const [activeDay, setActiveDay] = useState('Mon')
+  const [activeDay, setActiveDay] = useState('All')
   const [filterUser, setFilterUser] = useState<number | null>(null)
   const [taskModal, setTaskModal] = useState<'add' | Task | null>(null)
   const dayTasks = tasks.filter(t =>
-    t.day === activeDay && (filterUser === null || t.assignee === filterUser)
+    (activeDay === 'All' || t.day === activeDay) &&
+    (filterUser === null || t.assignee === filterUser)
   )
 
   return (
@@ -136,7 +137,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
         </div>
 
         <div className="flex gap-1.5 mt-4">
-          {DAYS.map(d => (
+          {['All', ...DAYS].map(d => (
             <button
               key={d}
               onClick={() => setActiveDay(d)}
@@ -210,7 +211,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
       {taskModal !== null && (
         <TaskModal
           initial={taskModal === 'add' ? undefined : taskModal}
-          defaultDay={activeDay}
+          defaultDay={activeDay === 'All' ? DAYS[0] : activeDay}
           users={users}
           onClose={() => setTaskModal(null)}
           onSave={async (data) => {
