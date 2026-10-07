@@ -13,13 +13,15 @@ use App\Application\Tasks\ListTasks\ListTasksQuery;
 use App\Application\Tasks\UpdateTask\UpdateTaskCommand;
 use App\Application\Tasks\UpdateTask\UpdateTaskHandler;
 use App\Application\Tasks\DeleteTask\DeleteTaskHandler;
+use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 
 final class TaskController
 {
     public function __construct(
-        private TaskRepositoryInterface $taskRepository
+        private TaskRepositoryInterface $taskRepository,
+        private ?AlertRepositoryInterface $alertRepository = null
     ) {
     }
 
@@ -29,7 +31,7 @@ final class TaskController
      */
     public function create(array $payload): array
     {
-        $handler = new CreateTaskHandler($this->taskRepository);
+        $handler = new CreateTaskHandler($this->taskRepository, $this->alertRepository);
         $task = $handler->handle(new CreateTaskCommand(
             title: (string) ($payload['title'] ?? ''),
             householdId: (string) ($payload['householdId'] ?? ''),
@@ -69,7 +71,7 @@ final class TaskController
 
     public function complete(int $taskId, string $userId): array
     {
-        $handler = new CompleteTaskHandler($this->taskRepository);
+        $handler = new CompleteTaskHandler($this->taskRepository, $this->alertRepository);
         $task = $handler->handle(new CompleteTaskCommand(
             taskId: $taskId,
             userId: $userId

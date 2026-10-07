@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http;
 
+use App\Domain\Alerts\AlertRepositoryInterface;
+use App\Domain\Members\MemberRepositoryInterface;
 use App\Domain\Tasks\TaskRepositoryInterface;
 
 final class Router
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
-        private ?\App\Domain\Members\MemberRepositoryInterface $memberRepository = null
+        private ?MemberRepositoryInterface $memberRepository = null,
+        private ?AlertRepositoryInterface $alertRepository = null
     ) {
     }
 
@@ -27,29 +30,29 @@ final class Router
         }
 
         if ($method === 'POST' && $path === '/tasks') {
-            $controller = new TaskController($this->taskRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository);
             return $controller->create($this->decodeJson($this->body($request)));
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository);
             return $controller->update($this->positiveId($matches[1]), $this->decodeJson($this->body($request)));
         }
 
         if ($method === 'DELETE' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
             $id = $this->positiveId($matches[1]);
-            (new TaskController($this->taskRepository))->delete($id);
+            (new TaskController($this->taskRepository, $this->alertRepository))->delete($id);
             return ['deleted' => true, 'id' => $id];
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/complete$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository);
             $payload = $this->decodeJson($this->body($request));
             return $controller->complete($this->positiveId($matches[1]), (string) ($payload['userId'] ?? ''));
         }
 
         if ($method === 'GET' && $path === '/tasks') {
-            $controller = new TaskController($this->taskRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository);
             $householdId = (string) ($request['householdId'] ?? '');
             if ($householdId === '' && isset($request['QUERY_STRING'])) {
                 parse_str((string) $request['QUERY_STRING'], $queryParams);
@@ -57,6 +60,30 @@ final class Router
             }
 
             return $controller->list($householdId);
+        }
+
+        if ($this->alertRepository !== null && $method === 'GET' && $path === '/alerts') {
+            $controller = new AlertController($this->alertRepository, $this->memberRepository);
+            $householdId = (string) ($request['householdId'] ?? '');
+            if ($householdId === '' && isset($request['QUERY_STRING'])) {
+                parse_str((string) $request['QUERY_STRING'], $queryParams);
+                $householdId = (string) ($queryParams['householdId'] ?? '');
+            }
+
+            return $controller->list($householdId);
+        }
+
+        if ($this->alertRepository !== null && $method === 'PATCH' && preg_match('#^/alerts/([^/]+)/dismiss$#', $path, $matches) === 1) {
+            $controller = new AlertController($this->alertRepository, $this->memberRepository);
+            $id = $this->positiveId($matches[1]);
+            return $controller->dismiss($id);
+        }
+
+        if ($this->alertRepository !== null && $method === 'POST' && $path === '/alerts/dismiss-all') {
+            $controller = new AlertController($this->alertRepository, $this->memberRepository);
+            $payload = $this->decodeJson($this->body($request));
+            $householdId = (string) ($payload['householdId'] ?? '');
+            return $controller->dismissAll($householdId);
         }
 
         if ($this->memberRepository !== null && $method === 'POST' && $path === '/members') {

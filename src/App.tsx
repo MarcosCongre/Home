@@ -1,8 +1,8 @@
 import { useState } from 'react'
 
+import { useAlerts } from '@/application/alerts/useAlerts'
 import { useMembers } from '@/application/members/useMembers'
 import { useTasks } from '@/application/tasks/useTasks'
-import { NOTIFS } from '@/infrastructure/demo/demoData'
 import {
   CalendarView,
   Dashboard,
@@ -23,6 +23,7 @@ export default function App() {
   const [detailId, setDetailId] = useState<number | null>(null)
   const { users, addUser, updateUser, removeUser, loadMembers, error: memberError } = useMembers()
   const { tasks, setTasks, completeTaskById, loadTasks, createTask, updateTask, error: taskError } = useTasks()
+  const { alerts, dismissAlert, dismissAll, unreadCount } = useAlerts()
   const error = memberError ?? taskError
 
   const openDetail = (id: number) => {
@@ -34,8 +35,6 @@ export default function App() {
     setDetailId(null)
     setTab('home')
   }
-
-  const unreadAlerts = NOTIFS.filter(n => n.urgent).length
 
   return (
     <>
@@ -88,7 +87,12 @@ export default function App() {
                 onUpdateTask={updateTask}
               />
             ) : tab === 'alerts' ? (
-              <Notifications users={users} />
+              <Notifications
+                users={users}
+                alerts={alerts}
+                onDismiss={dismissAlert}
+                onDismissAll={dismissAll}
+              />
             ) : (
               <Members
                 users={users}
@@ -117,9 +121,9 @@ export default function App() {
                   }}
                   className="flex-1 flex flex-col items-center justify-center py-1.5 relative"
                 >
-                  {t.id === 'alerts' && unreadAlerts > 0 && (
+                  {t.id === 'alerts' && unreadCount > 0 && (
                     <span className="absolute top-1 right-6 w-4 h-4 rounded-full bg-[#C4623A] text-white text-[9px] font-bold flex items-center justify-center">
-                      {unreadAlerts}
+                      {unreadCount}
                     </span>
                   )}
                   <span className="text-xl" style={{ filter: active ? 'none' : 'grayscale(1) opacity(0.4)' }}>

@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Bootstrap;
 
+use App\Domain\Alerts\AlertRepositoryInterface;
+use App\Domain\Members\MemberRepositoryInterface;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use App\Infrastructure\Http\Router;
 
 final class App
 {
     public function __construct(
-        private TaskRepositoryInterface $taskRepository
+        private TaskRepositoryInterface $taskRepository,
+        private ?MemberRepositoryInterface $memberRepository = null,
+        private ?AlertRepositoryInterface $alertRepository = null
     ) {
     }
 
@@ -20,6 +24,6 @@ final class App
      */
     public function handle(array $request): array
     {
-        return (new Router($this->taskRepository))->dispatch($request);
+        return (new Router($this->taskRepository, $this->memberRepository, $this->alertRepository))->dispatch($request);
     }
 }

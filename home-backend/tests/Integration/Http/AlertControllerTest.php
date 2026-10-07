@@ -1,0 +1,119 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Integration\Http;
+
+use App\Domain\Alerts\Alert;
+use App\Domain\Members\Member;
+use App\Infrastructure\Bootstrap\App;
+use App\Infrastructure\Persistence\InMemoryMemberRepository;
+use PHPUnit\Framework\TestCase;
+
+final class AlertControllerTest extends TestCase
+{
+    public function testItListsAlertsAndSerializesUserAndTime(): void
+    {
+        $taskRepository = new \App\Infrastructure\Persistence\InMemoryTaskRepository();
+        $memberRepository = new InMemoryMemberRepository();
+        $memberRepository->save(new Member(1, 'Ana', 'a', '#ff0000', 'house-42'));
+        $alertRepository = new AlertControllerTestRepository();
+        $alertRepository->save(Alert::create(
+            id: 0,
+            householdId: 'house-42',
+            memberId: 1,
+            title: 'Nueva tarea asignada',
+            body: 'Se te asignó la tarea "Pasear al perro".',
+            icon: 'check-circle',
+            urgent: false,
+            createdAt: new \DateTimeImmutable('2026-10-04 08:30:00')
+        ));
+
+        $app = new App($taskRepository, $memberRepository, $alertRepository);
+
+        $response = $app->handle([
+            'REQUEST_METHOD' => 'GET',
+            'PATH_INFO' => '/alerts',
+            'QUERY_STRING' => 'householdId=house-42',
+        ]);
+
+        $this->assertCount(1, $response);
+        $this->assertSame('Nueva tarea asignada', $response[0]['title']);
+        $this->assertSame('08:30 AM', $response[0]['time']);
+        $this->assertSame('Ana', $response[0]['user']);
+    }
+
+    public function testItDismissesAnAlertAndDismissesAllForHousehold(): void
+    {
+        $taskRepository = new \App\Infrastructure\Persistence\InMemoryTaskRepository();
+        $memberRepository = new InMemoryMemberRepository();
+        $alertRepository = new AlertControllerTestRepository();
+        $alertRepository->save(Alert::create(
+            id: 0,
+            householdId: 'house-7',
+            memberId: null,
+            title: 'Recordatorio',
+            body: 'Revisa la cocina.',
+            icon: 'bell',
+            urgent: false,
+            createdAt: new \DateTimeImmutable('2026-10-04 09:15:00')
+        ));
+
+        $app = new App($taskRepository, $memberRepository, $alertRepository);
+
+        $dismissed = $app->handle([
+            'REQUEST_METHOD' => 'PATCH',
+            'PATH_INFO' => '/alerts/1/dismiss',
+            'php://input' => '{}',
+        ]);
+        $this->assertSame(['dismissed' => true, 'id' => 1], $dismissed);
+
+        $allDismissed = $app->handle([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/alerts/dismiss-all',
+            'php://input' => '{"householdId":"house-7"}',
+        ]);
+        $this->assertSame(['dismissedAll' => true, 'householdId' => 'house-7'], $allDismissed);
+    }
+}
+
+final class AlertControllerTestRepository implements \App\Domain\Alerts\AlertRepositoryInterface
+{
+    /** @var array<int, Alert> */
+    private array $alerts = [];
+
+    public function findByHousehold(string $householdId): array
+    {
+        $items = array_values(array_filter($this->alerts, static fn (Alert $alert): bool => $alert->householdId() === $householdId));
+        usort($items, static fn (Alert $a, Alert $b): int => $b->createdAt() <=> $a->createdAt());
+
+        return $items;
+    }
+
+    public function save(Alert $alert): Alert
+    {
+        if ($alert->id() === 0) {
+            $alert->assignGeneratedId(1);
+        }
+
+        $this->alerts[$alert->id()] = $alert;
+
+        return $alert;
+    }
+
+    public function dismiss(int $id): void
+    {
+        if (isset($this->alerts[$id])) {
+            $this->alerts[$id]->dismiss();
+        }
+    }
+
+    public function dismissAll(string $householdId): void
+    {
+        foreach ($this->alerts as $alert) {
+            if ($alert->householdId() === $householdId) {
+                $alert->dismiss();
+            }
+        }
+    }
+}

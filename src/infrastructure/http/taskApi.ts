@@ -8,7 +8,7 @@ export async function listTasks(): Promise<Task[]> {
   return payload.map(mapTaskDto)
 }
 
-export async function completeTask(taskId: number, userId: string): Promise<Task> {
+export async function completeTask(taskId: number, userId: number): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}/complete`, {
     method: 'PATCH',
     body: JSON.stringify({ userId }),

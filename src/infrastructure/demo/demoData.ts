@@ -1,3 +1,4 @@
+import type { Alert } from '@/domain/alerts/alert'
 import type { Member } from '@/domain/members/member'
 import type { Task } from '@/domain/tasks/task'
 
@@ -25,14 +26,14 @@ export const INIT_TASKS: Task[] = [
   { id: 10, title: 'Run dishwasher', assignee: 4, category: 'Kitchen', recurrence: 'Daily', done: false, day: 'Tue', time: '20:00', priority: 'low', history: ['Sep 10', 'Sep 9', 'Sep 8'] },
 ]
 
-export const NOTIFS = [
-  { id: 'n1', icon: '🫧', title: 'Washing machine done', body: 'Cycle finished — remember to move clothes to the dryer.', time: '2 min ago', urgent: true, user: 'J' },
-  { id: 'n2', icon: '🗑️', title: 'Trash pickup tomorrow', body: 'Tuesday collection — bins need to be out by 7 am.', time: '1 hr ago', urgent: true, user: 'J' },
-  { id: 'n3', icon: '🐾', title: "Luna's evening feed", body: "Lily, Luna hasn't been fed yet today.", time: '3 hr ago', urgent: true, user: 'L' },
-  { id: 'n4', icon: '🌿', title: 'Plants need water', body: 'Thursday watering is due — monstera and pothos.', time: '5 hr ago', urgent: false, user: 'L' },
-  { id: 'n5', icon: '🛒', title: 'Grocery list ready', body: 'Maya added 8 items. Pick up on the way home?', time: 'Yesterday', urgent: false, user: 'M' },
-  { id: 'n6', icon: '💡', title: 'Electricity bill due', body: 'Due in 3 days — £84.50 via the provider portal.', time: 'Yesterday', urgent: false, user: 'J' },
-  { id: 'n7', icon: '🧹', title: 'Weekly cleaning recap', body: '6 of 8 tasks completed this week. Great job!', time: '2 days ago', urgent: false, user: null },
+export const NOTIFS: Alert[] = [
+  { id: 1, icon: '🫧', title: 'Washing machine done', body: 'Cycle finished — remember to move clothes to the dryer.', time: '2 min ago', urgent: true, user: 'J', status: 'unread' },
+  { id: 2, icon: '🗑️', title: 'Trash pickup tomorrow', body: 'Tuesday collection — bins need to be out by 7 am.', time: '1 hr ago', urgent: true, user: 'J', status: 'unread' },
+  { id: 3, icon: '🐾', title: "Luna's evening feed", body: "Lily, Luna hasn't been fed yet today.", time: '3 hr ago', urgent: true, user: 'L', status: 'unread' },
+  { id: 4, icon: '🌿', title: 'Plants need water', body: 'Thursday watering is due — monstera and pothos.', time: '5 hr ago', urgent: false, user: 'L', status: 'unread' },
+  { id: 5, icon: '🛒', title: 'Grocery list ready', body: 'Maya added 8 items. Pick up on the way home?', time: 'Yesterday', urgent: false, user: 'M', status: 'unread' },
+  { id: 6, icon: '💡', title: 'Electricity bill due', body: 'Due in 3 days — £84.50 via the provider portal.', time: 'Yesterday', urgent: false, user: 'J', status: 'unread' },
+  { id: 7, icon: '🧹', title: 'Weekly cleaning recap', body: '6 of 8 tasks completed this week. Great job!', time: '2 days ago', urgent: false, user: null, status: 'unread' },
 ]
 
 export const categoryColor: Record<string, string> = {

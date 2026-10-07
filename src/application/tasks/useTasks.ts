@@ -161,7 +161,7 @@ export function useTasks() {
   const completeTaskById = useCallback(
     async (
       taskId: number,
-      userId: string
+      userId: number
     ) => {
       const current = state.tasks.find(task => task.id === taskId)
       if (!current) return

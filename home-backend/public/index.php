@@ -5,6 +5,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Infrastructure\Http\Router;
+use App\Infrastructure\Persistence\PdoAlertRepository;
 use App\Infrastructure\Persistence\PdoMemberRepository;
 use App\Infrastructure\Persistence\PdoTaskRepository;
 
@@ -48,7 +49,11 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
-    $router = new Router(new PdoTaskRepository($pdo), new PdoMemberRepository($pdo));
+    $router = new Router(
+        new PdoTaskRepository($pdo),
+        new PdoMemberRepository($pdo),
+        new PdoAlertRepository($pdo)
+    );
     $request = $_SERVER;
     $request['PATH_INFO'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
     $request['rawBody'] = file_get_contents('php://input') ?: '{}';

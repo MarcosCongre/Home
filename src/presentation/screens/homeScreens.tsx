@@ -1,11 +1,11 @@
 import { useId, useState } from 'react'
 
+import type { Alert } from '@/domain/alerts/alert'
 import type { Member as User } from '@/domain/members/member'
 import type { Task } from '@/domain/tasks/task'
 import {
   CATEGORIES,
   DAYS,
-  NOTIFS,
   RECURRENCES,
   categoryColor,
 } from '@/infrastructure/demo/demoData'
@@ -230,10 +230,16 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
   )
 }
 
-export function Notifications({ users }: { users: User[] }) {
-  const userOf = (id: number | 0) => users.find(u => u.id === id)
-  const [dismissed, setDismissed] = useState<string[]>([])
-  const visible = NOTIFS.filter(n => !dismissed.includes(n.id))
+export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
+  alerts: Alert[]
+  onDismiss: (alertId: number) => Promise<void>
+  onDismissAll: () => Promise<void>
+  users: User[]
+}) {
+  const userByInitial = (initial: string | null) => initial
+    ? users.find(u => u.avatar === initial || u.name[0]?.toUpperCase() === initial.toUpperCase()) ?? null
+    : null
+  const visible = alerts
   const urgent = visible.filter(n => n.urgent)
   const rest = visible.filter(n => !n.urgent)
 
@@ -243,9 +249,9 @@ export function Notifications({ users }: { users: User[] }) {
         <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Today</p>
         <div className="flex items-center justify-between mt-0.5">
           <h2 className="font-display text-2xl text-[#3D2E1E]">Alerts</h2>
-          {dismissed.length < NOTIFS.length && (
+          {alerts.length > 0 && (
             <button
-              onClick={() => setDismissed(NOTIFS.map(n => n.id))}
+              onClick={() => void onDismissAll()}
               className="text-[11px] text-[#A89880] font-medium"
             >
               Clear all
@@ -260,7 +266,7 @@ export function Notifications({ users }: { users: User[] }) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#C4623A] mb-2">Needs attention</p>
             <div className="space-y-2">
               {urgent.map(n => {
-                const user = n.user ? userOf(n.user) : null
+                const user = n.user ? userByInitial(n.user) : null
                 return (
                   <div key={n.id} className="bg-white rounded-2xl px-4 py-3.5 shadow-sm border border-[#F0C4A8]">
                     <div className="flex items-start gap-3">
@@ -268,7 +274,7 @@ export function Notifications({ users }: { users: User[] }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-[#3D2E1E]">{n.title}</p>
-                          <button onClick={() => setDismissed(d => [...d, n.id])} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
+                          <button onClick={() => void onDismiss(n.id)} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
                         </div>
                         <p className="text-[12px] text-[#A89880] mt-0.5 leading-relaxed">{n.body}</p>
                         <div className="flex items-center gap-2 mt-2">
@@ -289,7 +295,7 @@ export function Notifications({ users }: { users: User[] }) {
             <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">Earlier</p>
             <div className="space-y-2">
               {rest.map(n => {
-                const user = n.user ? userOf(n.user) : null
+                const user = n.user ? userByInitial(n.user) : null
                 return (
                   <div key={n.id} className="bg-white rounded-2xl px-4 py-3 shadow-sm">
                     <div className="flex items-start gap-3">
@@ -297,7 +303,7 @@ export function Notifications({ users }: { users: User[] }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-[#3D2E1E]">{n.title}</p>
-                          <button onClick={() => setDismissed(d => [...d, n.id])} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
+                          <button onClick={() => void onDismiss(n.id)} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
                         </div>
                         <p className="text-[12px] text-[#A89880] mt-0.5 leading-relaxed">{n.body}</p>
                         <div className="flex items-center gap-2 mt-1.5">
@@ -751,7 +757,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
 
       {modal === 'add' && (
         <MemberModal onSave={(data) => {
-          const id = `${uid}-${Date.now()}`
+          const id = Math.max(0, ...users.map(user => user.id)) + 1
           onAddUser({ id, ...data })
           setModal(null)
         }} onClose={() => setModal(null)} />
