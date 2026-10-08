@@ -1,0 +1,8 @@
+Options -Indexes
+RewriteEngine On
+
+RewriteRule ^public/index\.php$ - [L]
+RewriteRule ^(?:src|tests|database|vendor)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:composer\.(?:json|lock)|phpunit\.xml|\.env(?:\..*)?)$ - [F,L,NC]
+RewriteRule \.php$ - [F,L,NC]
+RewriteRule ^ public/index.php [QSA,L]

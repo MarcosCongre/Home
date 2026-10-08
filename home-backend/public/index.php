@@ -55,7 +55,12 @@ try {
         new PdoAlertRepository($pdo)
     );
     $request = $_SERVER;
-    $request['PATH_INFO'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $apiBasePath = rtrim((string) (getenv('API_BASE_PATH') ?: ''), '/');
+    if ($apiBasePath !== '' && ($requestPath === $apiBasePath || str_starts_with($requestPath, $apiBasePath . '/'))) {
+        $requestPath = substr($requestPath, strlen($apiBasePath)) ?: '/';
+    }
+    $request['PATH_INFO'] = $requestPath;
     $request['rawBody'] = file_get_contents('php://input') ?: '{}';
     echo json_encode($router->dispatch($request), JSON_THROW_ON_ERROR);
 } catch (InvalidArgumentException $exception) {
