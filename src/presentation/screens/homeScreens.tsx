@@ -239,7 +239,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
   const userByInitial = (initial: string | null) => initial
     ? users.find(u => u.avatar === initial || u.name[0]?.toUpperCase() === initial.toUpperCase()) ?? null
     : null
-  const visible = alerts
+  const visible = alerts.filter(n => n.status !== 'dismissed')
   const urgent = visible.filter(n => n.urgent)
   const rest = visible.filter(n => !n.urgent)
 
@@ -249,7 +249,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
         <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Today</p>
         <div className="flex items-center justify-between mt-0.5">
           <h2 className="font-display text-2xl text-[#3D2E1E]">Alerts</h2>
-          {alerts.length > 0 && (
+          {visible.length > 0 && (
             <button
               onClick={() => void onDismissAll()}
               className="text-[11px] text-[#A89880] font-medium"

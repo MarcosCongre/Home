@@ -6,6 +6,8 @@ namespace Tests\Unit\Application\Alerts;
 
 use App\Application\Alerts\CreateAlert\CreateAlertCommand;
 use App\Application\Alerts\CreateAlert\CreateAlertHandler;
+use App\Application\Alerts\ListAlerts\ListAlertsHandler;
+use App\Application\Alerts\ListAlerts\ListAlertsQuery;
 use App\Application\Tasks\CompleteTask\CompleteTaskCommand;
 use App\Application\Tasks\CompleteTask\CompleteTaskHandler;
 use App\Application\Tasks\CreateTask\CreateTaskCommand;
@@ -97,6 +99,86 @@ final class AlertApplicationTest extends TestCase
         $this->assertSame('Tarea completada', $alerts[0]->title());
         $this->assertStringContainsString('Ordenar la cocina', $alerts[0]->body());
         $this->assertStringContainsString('11', $alerts[0]->body());
+    }
+
+    public function testListingHidesDismissedAlerts(): void
+    {
+        $repository = new InMemoryAlertRepository();
+        $createHandler = new CreateAlertHandler($repository);
+        $createAlert = static fn (string $title) => $createHandler->handle(new CreateAlertCommand(
+            householdId: 'house-42',
+            memberId: null,
+            title: $title,
+            body: 'Body',
+            icon: 'check-circle',
+            urgent: false,
+            createdAt: new \DateTimeImmutable('2026-09-16 09:00:00')
+        ));
+
+        $createAlert('Dismissed alert');
+        $repository->dismissAll('house-42');
+        $createAlert('Unread alert');
+
+        $alerts = (new ListAlertsHandler($repository))->handle(new ListAlertsQuery('house-42'));
+
+        $this->assertCount(1, $alerts);
+        $this->assertSame('Unread alert', $alerts[0]->title());
+    }
+
+    public function testTaskIsCreatedEvenWhenTheAlertCannotBeSaved(): void
+    {
+        $taskRepository = new InMemoryTaskRepository();
+        $handler = new CreateTaskHandler($taskRepository, new FailingAlertRepository());
+
+        $task = $handler->handle(new CreateTaskCommand(
+            title: 'Pasear al perro',
+            householdId: 'house-42',
+            userId: 'user-77',
+            assignedMemberId: 7,
+            day: 'monday',
+            time: '18:00'
+        ));
+
+        $this->assertCount(1, $taskRepository->findByHouseholdId('house-42'));
+        $this->assertSame('Pasear al perro', $task->title()->value());
+    }
+
+    public function testTaskIsCompletedEvenWhenTheAlertCannotBeSaved(): void
+    {
+        $taskRepository = new InMemoryTaskRepository();
+        $taskRepository->save(Task::create(
+            id: 100,
+            title: 'Ordenar la cocina',
+            householdId: 'house-42',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        ));
+        $handler = new CompleteTaskHandler($taskRepository, new FailingAlertRepository());
+
+        $task = $handler->handle(new CompleteTaskCommand(taskId: 100, userId: 'user-77'));
+
+        $this->assertNotNull($task->completedAt());
+        $this->assertNotNull($taskRepository->findById(100)?->completedAt());
+    }
+}
+
+final class FailingAlertRepository implements AlertRepositoryInterface
+{
+    public function findByHousehold(string $householdId): array
+    {
+        return [];
+    }
+
+    public function save(Alert $alert): Alert
+    {
+        throw new \RuntimeException('Alert storage unavailable');
+    }
+
+    public function dismiss(int $id): void
+    {
+    }
+
+    public function dismissAll(string $householdId): void
+    {
     }
 }
 
