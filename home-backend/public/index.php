@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+use App\Infrastructure\Http\RouteNotFoundException;
 use App\Infrastructure\Http\Router;
 use App\Infrastructure\Persistence\PdoAlertRepository;
 use App\Infrastructure\Persistence\PdoMemberRepository;
@@ -63,6 +64,9 @@ try {
     $request['PATH_INFO'] = $requestPath;
     $request['rawBody'] = file_get_contents('php://input') ?: '{}';
     echo json_encode($router->dispatch($request), JSON_THROW_ON_ERROR);
+} catch (RouteNotFoundException $exception) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Not found']);
 } catch (InvalidArgumentException $exception) {
     http_response_code(400);
     echo json_encode(['error' => $exception->getMessage()]);

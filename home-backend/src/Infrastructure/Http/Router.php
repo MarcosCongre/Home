@@ -115,7 +115,7 @@ final class Router
             return $controller->list($householdId);
         }
 
-        return ['error' => 'Not found'];
+        throw RouteNotFoundException::for($method, $path);
     }
 
     /**
