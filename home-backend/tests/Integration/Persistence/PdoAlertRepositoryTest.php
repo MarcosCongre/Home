@@ -54,4 +54,30 @@ final class PdoAlertRepositoryTest extends TestCase
         $this->assertSame(AlertStatus::DISMISSED, $repository->findByHousehold('house-42')[0]->status());
         $this->assertSame(AlertStatus::DISMISSED, $repository->findByHousehold('house-42')[1]->status());
     }
+
+    public function testItPersistsCreatedAtAsAppLocalTimestamp(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $repository = new PdoAlertRepository($pdo);
+        $createdAt = new \DateTimeImmutable('2026-10-04T11:30:00+00:00');
+
+        $saved = $repository->save(Alert::create(
+            id: 0,
+            householdId: 'house-43',
+            memberId: null,
+            title: 'Nueva tarea asignada',
+            body: 'Se te asignó una tarea.',
+            icon: 'check-circle',
+            urgent: false,
+            createdAt: $createdAt
+        ));
+
+        $raw = $pdo->query('SELECT created_at FROM alerts WHERE id = ' . $saved->id())->fetchColumn();
+        $this->assertSame('2026-10-04 08:30:00', $raw);
+        $this->assertSame(
+            $createdAt->getTimestamp(),
+            $repository->findByHousehold('house-43')[0]->createdAt()->getTimestamp()
+        );
+    }
 }

@@ -78,7 +78,7 @@ final class PdoAlertRepository implements AlertRepositoryInterface
         $statement->bindValue(':icon', $alert->icon());
         $statement->bindValue(':urgent', $alert->urgent() ? 1 : 0, PDO::PARAM_INT);
         $statement->bindValue(':status', $alert->status()->value);
-        $statement->bindValue(':createdAt', $alert->createdAt()->format(DATE_ATOM));
+        $statement->bindValue(':createdAt', DbDateTime::format($alert->createdAt()));
         $statement->execute();
 
         if ($alert->id() === 0) {

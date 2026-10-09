@@ -82,8 +82,9 @@ final class PdoTaskRepository implements TaskRepositoryInterface
         $statement->bindValue(':status', $task->status()->value);
         $statement->bindValue(':householdId', $task->householdId());
         $statement->bindValue(':assignedMemberId', $task->assignedMemberId(), $task->assignedMemberId() === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-        $statement->bindValue(':createdAt', $task->createdAt()->format(DATE_ATOM));
-        $statement->bindValue(':completedAt', $task->completedAt()?->format(DATE_ATOM), $task->completedAt() === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $completedAt = $task->completedAt();
+        $statement->bindValue(':createdAt', DbDateTime::format($task->createdAt()));
+        $statement->bindValue(':completedAt', $completedAt === null ? null : DbDateTime::format($completedAt), $completedAt === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':day', $day, $day === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':time', $time, $time === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->bindValue(':category', $category, $category === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
