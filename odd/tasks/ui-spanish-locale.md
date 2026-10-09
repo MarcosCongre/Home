@@ -25,6 +25,7 @@ Product decision by the user on 2026-10-09 (pending task #5 resolved): Spanish U
 - Cross-household alert dismiss (`Router.php:76-80`) and member lookup without household check (`AlertController.php:55-67`).
 - Avatar never resolving: API returns full name, UI matches by initial (`homeScreens.tsx` Notifications).
 - Alert body leaks internal member ID ("Miembro #%d" in `CreateTaskHandler.php:60`).
+- Dashboard shows "NaN% completado esta semana" when the filtered task list is empty: `homeScreens.tsx:57` divides `done / tasks.length` without guarding zero. Seen on the user's phone on 2026-10-09.
 
 ## Tasks
 - [x] T1 — Backend timezone: `APP_TIMEZONE` config (default `America/Argentina/Buenos_Aires`) applied in `public/index.php`, PDO session `time_zone` aligned, Dockerfile/docker-compose updated, tests adjusted. Route: delegated (writer, 3+ backend files + tests). Commit `13c210f`. RED: 4 errors + `'08:30 AM'` expected vs `'11:30 AM'`; GREEN: `composer test` OK (44 tests, 168 assertions), parent re-run confirmed. Invalid `APP_TIMEZONE` falls back to default with `error_log` (display-only concern, no 500s). `AlertController` converts `createdAt` with `setTimezone` because offset-carrying datetimes ignore the default zone. Not verified: MySQL `SET time_zone` path (no Docker/MySQL locally).
