@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+use App\Infrastructure\Config\AppTimezone;
 use App\Infrastructure\Http\RouteNotFoundException;
 use App\Infrastructure\Http\Router;
 use App\Infrastructure\Persistence\PdoAlertRepository;
@@ -21,6 +22,9 @@ if (is_file($envFile)) {
         putenv(trim($key) . '=' . trim($value));  
     }  
 }
+
+$appTimezone = AppTimezone::resolve(getenv('APP_TIMEZONE') ?: null);
+date_default_timezone_set($appTimezone->getName());
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $allowedOrigins = array_filter(array_map('trim', explode(',', getenv('CORS_ALLOWED_ORIGINS') ?: '*')));
@@ -50,6 +54,10 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+        // Keep TIMESTAMP reads/writes in the app timezone (fixed offset per connection).
+        $pdo->exec(sprintf("SET time_zone = '%s'", AppTimezone::mysqlOffset($appTimezone)));
+    }
     $router = new Router(
         new PdoTaskRepository($pdo),
         new PdoMemberRepository($pdo),

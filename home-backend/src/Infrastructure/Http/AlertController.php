@@ -63,7 +63,9 @@ final class AlertController
             'icon' => $alert->icon(),
             'urgent' => $alert->urgent(),
             'status' => $alert->status()->value,
-            'time' => $alert->createdAt()->format('h:i A'),
+            'time' => $alert->createdAt()
+                ->setTimezone(new \DateTimeZone(date_default_timezone_get()))
+                ->format('h:i A'),
             'user' => $member?->name(),
         ];
     }

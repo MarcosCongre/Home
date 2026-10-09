@@ -43,6 +43,34 @@ final class AlertControllerTest extends TestCase
         $this->assertSame('Ana', $response[0]['user']);
     }
 
+    public function testItRendersAlertTimeInTheAppTimezone(): void
+    {
+        $taskRepository = new \App\Infrastructure\Persistence\InMemoryTaskRepository();
+        $memberRepository = new InMemoryMemberRepository();
+        $alertRepository = new AlertControllerTestRepository();
+        $alertRepository->save(Alert::create(
+            id: 0,
+            householdId: 'house-42',
+            memberId: null,
+            title: 'Tarea completada',
+            body: 'Tarea completada: "Ordenar".',
+            icon: 'check-circle',
+            urgent: false,
+            createdAt: new \DateTimeImmutable('2026-10-04T11:30:00+00:00')
+        ));
+
+        $app = new App($taskRepository, $memberRepository, $alertRepository);
+
+        $response = $app->handle([
+            'REQUEST_METHOD' => 'GET',
+            'PATH_INFO' => '/alerts',
+            'QUERY_STRING' => 'householdId=house-42',
+        ]);
+
+        $this->assertSame('America/Argentina/Buenos_Aires', date_default_timezone_get());
+        $this->assertSame('08:30 AM', $response[0]['time']);
+    }
+
     public function testItDismissesAnAlertAndDismissesAllForHousehold(): void
     {
         $taskRepository = new \App\Infrastructure\Persistence\InMemoryTaskRepository();
