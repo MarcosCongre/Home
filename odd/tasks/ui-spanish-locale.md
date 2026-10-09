@@ -55,5 +55,7 @@ Product decision by the user on 2026-10-09 (pending task #5 resolved): Spanish U
 - 2026-10-09: Slice 1 committed (`13c210f`, `358c617`). RDD assess: high (`process_boundary` in `public/index.php`); user granted review; lineage `review-e9735640b3a524ab`, 4 lenses running.
 - 2026-10-09: Slice 1 review approved (4 lenses, 0 findings) and acknowledged (authority burned). Reviewed boundary: `358c617`. T2–T4 delegated to one writer.
 
+- 2026-10-09: Slice 2 committed (`954ac7b`). RDD assess `--base-ref 358c617 --committed-only`: medium (`executable_change` in `src/App.tsx`), 378 lines, `review_due: false` (`under_budget`) — stays pending in the slice; no review run.
+
 ## Next step
-Verify T2–T4 writer output (`pnpm build`, leftover-English scan), commit slice 2, assess with `--base-ref 358c617 --committed-only`.
+User: visual check of the Spanish UI in the running app; decide push/PR (`feature-branch-chain`). Then next feature (queued): cross-household alert security, avatar lookup, "Miembro #%d" leak.
