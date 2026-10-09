@@ -55,7 +55,7 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
         tasks: [],
         isLoading: false,
         isEmpty: true,
-        error: 'Unable to load tasks. Check the API connection and retry.',
+        error: 'No se pudieron cargar las tareas. Verifica la conexión con la API e intenta de nuevo.',
       }
 
     case 'set-tasks':

@@ -41,7 +41,7 @@ function alertReducer(state: AlertState, action: AlertAction): AlertState {
       return {
         ...state,
         isLoading: false,
-        error: 'Unable to load alerts. Check the API connection and retry.',
+        error: 'No se pudieron cargar las alertas. Verifica la conexión con la API e intenta de nuevo.',
       }
 
     case 'set-alerts':

@@ -10,12 +10,13 @@ import {
   Notifications,
   TaskDetail,
 } from '@/presentation/screens/homeScreens'
+import { es } from '@/presentation/i18n/es'
 
 const TABS = [
-  { id: 'home', label: 'Home', icon: '⌂' },
-  { id: 'calendar', label: 'Calendar', icon: '◫' },
-  { id: 'alerts', label: 'Alerts', icon: '◻' },
-  { id: 'members', label: 'Members', icon: '◎' },
+  { id: 'home', label: es.tabs.home, icon: '⌂' },
+  { id: 'calendar', label: es.tabs.calendar, icon: '◫' },
+  { id: 'alerts', label: es.tabs.alerts, icon: '◻' },
+  { id: 'members', label: es.tabs.members, icon: '◎' },
 ]
 
 export default function App() {
@@ -48,7 +49,7 @@ export default function App() {
               void loadTasks()
             }}
           >
-            Retry
+            {es.common.retry}
           </button>
         </div>
       )}

@@ -27,11 +27,13 @@ Product decision by the user on 2026-10-09 (pending task #5 resolved): Spanish U
 - Alert body leaks internal member ID ("Miembro #%d" in `CreateTaskHandler.php:60`).
 
 ## Tasks
-- [ ] T1 — Backend timezone: `APP_TIMEZONE` config (default `America/Argentina/Buenos_Aires`) applied in `public/index.php`, PDO session `time_zone` aligned, Dockerfile/docker-compose updated, tests adjusted. Route: delegated (writer, 3+ backend files + tests).
-- [ ] T2 — Spanish strings module + display label maps (days, categories, recurrences, priorities). Route: delegated (together with T3).
-- [ ] T3 — Translate `App.tsx`, `homeScreens.tsx`, `TaskModal.tsx`, hook error messages, `taskMapper` fallbacks. Route: delegated (writer, 2+ non-trivial files).
-- [ ] T4 — Demo data in Spanish; alert NOTIFS times as `h:i A`; hardcoded dates in Spanish. Route: delegated (with T3).
-- [ ] T5 — `index.html` `lang="es"` and real title. Route: inline (mechanical). Edited: `lang="es"`, title "Tareas del hogar" (Figma placeholders were never substituted locally); pending commit.
+- [x] T1 — Backend timezone: `APP_TIMEZONE` config (default `America/Argentina/Buenos_Aires`) applied in `public/index.php`, PDO session `time_zone` aligned, Dockerfile/docker-compose updated, tests adjusted. Route: delegated (writer, 3+ backend files + tests). Commit `13c210f`. RED: 4 errors + `'08:30 AM'` expected vs `'11:30 AM'`; GREEN: `composer test` OK (44 tests, 168 assertions), parent re-run confirmed. Invalid `APP_TIMEZONE` falls back to default with `error_log` (display-only concern, no 500s). `AlertController` converts `createdAt` with `setTimezone` because offset-carrying datetimes ignore the default zone. Not verified: MySQL `SET time_zone` path (no Docker/MySQL locally).
+- [x] T2 — Spanish strings module + display label maps (days, categories, recurrences, priorities). Route: delegated (together with T3). `src/presentation/i18n/es.ts`: `labelFor` with raw-value fallback; priorities keyed `low`/`med`/`high`; labels for `Uncategorized`, `Once`, `none`; count-aware plural helpers.
+- [x] T3 — Translate `App.tsx`, `homeScreens.tsx`, `TaskModal.tsx`, hook error messages, `taskMapper` fallbacks. Route: delegated (writer, 2+ non-trivial files). `taskMapper`/`apiClient` unchanged (fallbacks are values, labeled in `es.ts`; other messages internal). Spanish `aria-label`s added to icon-only buttons.
+- [x] T4 — Demo data in Spanish; alert NOTIFS times as `h:i A`; hardcoded dates in Spanish. Route: delegated (with T3). Stored values (DAYS/CATEGORIES/RECURRENCES, `categoryColor` keys) unchanged.
+- Slice 2 checks: test-first exception (no frontend runner). `pnpm build` pass (writer); `npx tsc --noEmit -p .` exit 0 (writer + parent re-run); leftover-English scan clean except identifiers/names. Visual check in the running app: pending (user).
+- Follow-ups noticed (not fixed): `TaskModal` offers `'All'` ("Todas") as a selectable category (pre-existing); demo alert "Recolección de basura mañana" mentions Tuesday while dashboard date is Wednesday (pre-existing).
+- [x] T5 — `index.html` `lang="es"` and real title. Route: inline (mechanical). `lang="es"`, title "Tareas del hogar" (Figma placeholders were never substituted locally). Commit `358c617`. Check: structural readback.
 
 ## Acceptance criteria
 - `composer test` passes; alert `time` is rendered in Buenos Aires local time with `h:i A`.
@@ -50,6 +52,8 @@ Product decision by the user on 2026-10-09 (pending task #5 resolved): Spanish U
 
 ## Progress
 - 2026-10-09: Feature document created. Exploration done (read-only mapping).
+- 2026-10-09: Slice 1 committed (`13c210f`, `358c617`). RDD assess: high (`process_boundary` in `public/index.php`); user granted review; lineage `review-e9735640b3a524ab`, 4 lenses running.
+- 2026-10-09: Slice 1 review approved (4 lenses, 0 findings) and acknowledged (authority burned). Reviewed boundary: `358c617`. T2–T4 delegated to one writer.
 
 ## Next step
-T1 backend timezone.
+Verify T2–T4 writer output (`pnpm build`, leftover-English scan), commit slice 2, assess with `--base-ref 358c617 --committed-only`.

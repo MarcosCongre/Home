@@ -14,26 +14,26 @@ export const INIT_USERS: Member[] = [
 ]
 
 export const INIT_TASKS: Task[] = [
-  { id: 1, title: 'Vacuum living room', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Mon', time: '10:00', priority: 'med', history: ['Sep 9', 'Sep 2', 'Aug 26'] },
-  { id: 2, title: 'Take out trash', assignee: 2, category: 'Waste', recurrence: 'Tue & Fri', done: true, day: 'Tue', time: '07:30', priority: 'high', history: ['Sep 10', 'Sep 6', 'Aug 30'] },
-  { id: 3, title: 'Feed Luna', assignee: 3, category: 'Pets', recurrence: 'Daily', done: false, day: 'Mon', time: '08:00', priority: 'high', history: ['Sep 11', 'Sep 10', 'Sep 9'] },
-  { id: 4, title: 'Grocery run', assignee: 1, category: 'Shopping', recurrence: 'Weekly', done: false, day: 'Wed', time: '14:00', priority: 'med', history: ['Sep 8', 'Sep 1', 'Aug 25'] },
-  { id: 5, title: 'Wash bed linens', assignee: 2, category: 'Laundry', recurrence: 'Biweekly', done: false, day: 'Sat', time: '09:00', priority: 'low', history: ['Sep 6', 'Aug 23'] },
-  { id: 6, title: 'Mop kitchen floor', assignee: 4, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Thu', time: '11:00', priority: 'med', history: ['Sep 5', 'Aug 29'] },
-  { id: 7, title: 'Water the plants', assignee: 3, category: 'Garden', recurrence: 'Mon & Thu', done: true, day: 'Mon', time: '09:00', priority: 'low', history: ['Sep 9', 'Sep 5', 'Sep 2'] },
-  { id: 8, title: 'Clean bathroom', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Fri', time: '10:00', priority: 'med', history: ['Sep 5', 'Aug 29'] },
-  { id: 9, title: 'Pay electricity bill', assignee: 2, category: 'Bills', recurrence: 'Monthly', done: false, day: 'Wed', time: '—', priority: 'high', history: ['Aug 15', 'Jul 15'] },
-  { id: 10, title: 'Run dishwasher', assignee: 4, category: 'Kitchen', recurrence: 'Daily', done: false, day: 'Tue', time: '20:00', priority: 'low', history: ['Sep 10', 'Sep 9', 'Sep 8'] },
+  { id: 1, title: 'Aspirar la sala', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Mon', time: '10:00', priority: 'med', history: ['9 sep', '2 sep', '26 ago'] },
+  { id: 2, title: 'Sacar la basura', assignee: 2, category: 'Waste', recurrence: 'Tue & Fri', done: true, day: 'Tue', time: '07:30', priority: 'high', history: ['10 sep', '6 sep', '30 ago'] },
+  { id: 3, title: 'Alimentar a Luna', assignee: 3, category: 'Pets', recurrence: 'Daily', done: false, day: 'Mon', time: '08:00', priority: 'high', history: ['11 sep', '10 sep', '9 sep'] },
+  { id: 4, title: 'Hacer las compras', assignee: 1, category: 'Shopping', recurrence: 'Weekly', done: false, day: 'Wed', time: '14:00', priority: 'med', history: ['8 sep', '1 sep', '25 ago'] },
+  { id: 5, title: 'Lavar la ropa de cama', assignee: 2, category: 'Laundry', recurrence: 'Biweekly', done: false, day: 'Sat', time: '09:00', priority: 'low', history: ['6 sep', '23 ago'] },
+  { id: 6, title: 'Trapear el piso de la cocina', assignee: 4, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Thu', time: '11:00', priority: 'med', history: ['5 sep', '29 ago'] },
+  { id: 7, title: 'Regar las plantas', assignee: 3, category: 'Garden', recurrence: 'Mon & Thu', done: true, day: 'Mon', time: '09:00', priority: 'low', history: ['9 sep', '5 sep', '2 sep'] },
+  { id: 8, title: 'Limpiar el baño', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Fri', time: '10:00', priority: 'med', history: ['5 sep', '29 ago'] },
+  { id: 9, title: 'Pagar la factura de luz', assignee: 2, category: 'Bills', recurrence: 'Monthly', done: false, day: 'Wed', time: '—', priority: 'high', history: ['15 ago', '15 jul'] },
+  { id: 10, title: 'Poner el lavavajillas', assignee: 4, category: 'Kitchen', recurrence: 'Daily', done: false, day: 'Tue', time: '20:00', priority: 'low', history: ['10 sep', '9 sep', '8 sep'] },
 ]
 
 export const NOTIFS: Alert[] = [
-  { id: 1, icon: '🫧', title: 'Washing machine done', body: 'Cycle finished — remember to move clothes to the dryer.', time: '2 min ago', urgent: true, user: 'J', status: 'unread' },
-  { id: 2, icon: '🗑️', title: 'Trash pickup tomorrow', body: 'Tuesday collection — bins need to be out by 7 am.', time: '1 hr ago', urgent: true, user: 'J', status: 'unread' },
-  { id: 3, icon: '🐾', title: "Luna's evening feed", body: "Lily, Luna hasn't been fed yet today.", time: '3 hr ago', urgent: true, user: 'L', status: 'unread' },
-  { id: 4, icon: '🌿', title: 'Plants need water', body: 'Thursday watering is due — monstera and pothos.', time: '5 hr ago', urgent: false, user: 'L', status: 'unread' },
-  { id: 5, icon: '🛒', title: 'Grocery list ready', body: 'Maya added 8 items. Pick up on the way home?', time: 'Yesterday', urgent: false, user: 'M', status: 'unread' },
-  { id: 6, icon: '💡', title: 'Electricity bill due', body: 'Due in 3 days — £84.50 via the provider portal.', time: 'Yesterday', urgent: false, user: 'J', status: 'unread' },
-  { id: 7, icon: '🧹', title: 'Weekly cleaning recap', body: '6 of 8 tasks completed this week. Great job!', time: '2 days ago', urgent: false, user: null, status: 'unread' },
+  { id: 1, icon: '🫧', title: 'Lavado terminado', body: 'El ciclo terminó: recuerda pasar la ropa a la secadora.', time: '09:39 AM', urgent: true, user: 'J', status: 'unread' },
+  { id: 2, icon: '🗑️', title: 'Recolección de basura mañana', body: 'Recolección del martes: los contenedores deben estar afuera antes de las 7 a. m.', time: '08:40 AM', urgent: true, user: 'J', status: 'unread' },
+  { id: 3, icon: '🐾', title: 'Cena de Luna', body: 'Lily, Luna todavía no ha comido hoy.', time: '06:41 AM', urgent: true, user: 'L', status: 'unread' },
+  { id: 4, icon: '🌿', title: 'Las plantas necesitan agua', body: 'Toca el riego del jueves: monstera y potus.', time: '04:41 AM', urgent: false, user: 'L', status: 'unread' },
+  { id: 5, icon: '🛒', title: 'Lista de compras lista', body: 'Maya agregó 8 artículos. ¿Los compras de camino a casa?', time: '07:15 PM', urgent: false, user: 'M', status: 'unread' },
+  { id: 6, icon: '💡', title: 'Vence la factura de luz', body: 'Vence en 3 días: $84.50 a través del portal del proveedor.', time: '02:15 PM', urgent: false, user: 'J', status: 'unread' },
+  { id: 7, icon: '🧹', title: 'Resumen semanal de limpieza', body: '6 de 8 tareas completadas esta semana. ¡Buen trabajo!', time: '11:30 AM', urgent: false, user: null, status: 'unread' },
 ]
 
 export const categoryColor: Record<string, string> = {
