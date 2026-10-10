@@ -46,5 +46,12 @@ Queued by the user as pending task 1 after `ui-spanish-locale` (2026-10-09).
 - 2026-10-09: Feature document created after read-only exploration.
 - 2026-10-09: T1 implemented: `AlertRepositoryInterface::dismiss(int, string): bool` (existence checked via SELECT, not rowCount), new `Domain\Alerts\AlertNotFoundException` mapped to 404 in `public/index.php`, Router requires body `householdId` (400 when missing), serializer drops members of other households, frontend sends `householdId`.
 
+- 2026-10-09: RDD review lineage `review-0fa48ce33be95224` (base `88d363b`, 40 files, 1111 lines, high, consent granted) resumed via bound STATUS; 4 lenses captured sequentially (risk, resilience, readability, reliability), all `completed`. Terminal state `approved`, no blockers (6 WARNING / 20 SUGGESTION, all informational). Acknowledged: authority `burned` (consumed revision `sha256:4dc7929a…5715e`).
+
+## Review follow-ups (informational, non-blocking)
+- R4: `public/index.php:58-61` sets MySQL session `time_zone` to a fixed numeric offset from "now", while PHP reads values with the named zone; DST zones (e.g. Europe/Madrid) can shift values across a DST boundary.
+- R2: `src/infrastructure/config/environment.ts:8` flips demo mode to opt-in (`VITE_DEMO_MODE === 'true'`); undocumented behavior change.
+- R3: `public/index.php:68-73` `API_BASE_PATH` prefix stripping is untested (exact base, prefixed path, prefix-only lookalike).
+
 ## Next step
-FIRST: resume RDD review lineage `review-0fa48ce33be95224` (consent granted; base `88d363b`, 40 files, 1111 lines, high). The 4 concurrent reviewer captures were killed by low system memory before delivering. Resume via the bound STATUS and run each `review.capture-result` one at a time; never re-START. Then user: decide push/PR. Follow-ups: same household scoping for task/member endpoints; `dismiss-all` accepts empty `householdId`; no auth exists (householdId is client-supplied).
+User: decide push/PR. Follow-ups: review warnings above; same household scoping for task/member endpoints; `dismiss-all` accepts empty `householdId`; no auth exists (householdId is client-supplied).
