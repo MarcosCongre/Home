@@ -76,7 +76,12 @@ final class Router
         if ($this->alertRepository !== null && $method === 'PATCH' && preg_match('#^/alerts/([^/]+)/dismiss$#', $path, $matches) === 1) {
             $controller = new AlertController($this->alertRepository, $this->memberRepository);
             $id = $this->positiveId($matches[1]);
-            return $controller->dismiss($id);
+            $payload = $this->decodeJson($this->body($request));
+            $householdId = (string) ($payload['householdId'] ?? '');
+            if ($householdId === '') {
+                throw new \InvalidArgumentException('householdId is required.');
+            }
+            return $controller->dismiss($id, $householdId);
         }
 
         if ($this->alertRepository !== null && $method === 'POST' && $path === '/alerts/dismiss-all') {
@@ -115,7 +120,7 @@ final class Router
             return $controller->list($householdId);
         }
 
-        return ['error' => 'Not found'];
+        throw RouteNotFoundException::for($method, $path);
     }
 
     /**

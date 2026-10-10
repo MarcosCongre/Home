@@ -33,9 +33,9 @@ final class AlertController
         return array_map(fn (Alert $alert): array => $this->serializeAlert($alert), $alerts);
     }
 
-    public function dismiss(int $id): array
+    public function dismiss(int $id, string $householdId): array
     {
-        (new DismissAlertHandler($this->alertRepository))->handle(new DismissAlertCommand($id));
+        (new DismissAlertHandler($this->alertRepository))->handle(new DismissAlertCommand($id, $householdId));
 
         return ['dismissed' => true, 'id' => $id];
     }
@@ -55,6 +55,9 @@ final class AlertController
         $member = $alert->memberId() === null || $this->memberRepository === null
             ? null
             : $this->memberRepository->findById($alert->memberId());
+        if ($member !== null && $member->householdId() !== $alert->householdId()) {
+            $member = null;
+        }
 
         return [
             'id' => $alert->id(),
@@ -63,7 +66,9 @@ final class AlertController
             'icon' => $alert->icon(),
             'urgent' => $alert->urgent(),
             'status' => $alert->status()->value,
-            'time' => $alert->createdAt()->format('h:i A'),
+            'time' => $alert->createdAt()
+                ->setTimezone(new \DateTimeZone(date_default_timezone_get()))
+                ->format('h:i A'),
             'user' => $member?->name(),
         ];
     }

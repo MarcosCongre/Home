@@ -85,4 +85,29 @@ final class PdoTaskRepositoryTest extends TestCase
         $this->assertNull($persistedDefault->category());
         $this->assertNull($persistedDefault->recurrence());
     }
+
+    public function testItPersistsTimestampsAsAppLocalValues(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $repository = new PdoTaskRepository($pdo);
+        $createdAt = new \DateTimeImmutable('2026-10-04T11:30:00+00:00');
+        $completedAt = new \DateTimeImmutable('2026-10-04T13:45:00+00:00');
+
+        $repository->save(new Task(
+            id: 200,
+            title: new \App\Domain\Tasks\TaskTitle('Water plants'),
+            householdId: 'house-11',
+            createdAt: $createdAt,
+            completedAt: $completedAt
+        ));
+
+        $row = $pdo->query('SELECT created_at, completed_at FROM tasks WHERE id = 200')->fetch(\PDO::FETCH_ASSOC);
+        $this->assertSame('2026-10-04 08:30:00', $row['created_at']);
+        $this->assertSame('2026-10-04 10:45:00', $row['completed_at']);
+
+        $stored = $repository->findById(200);
+        $this->assertNotNull($stored);
+        $this->assertSame($createdAt->getTimestamp(), $stored->createdAt()->getTimestamp());
+        $this->assertSame($completedAt->getTimestamp(), $stored->completedAt()?->getTimestamp());
+    }
 }

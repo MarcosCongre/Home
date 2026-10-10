@@ -9,6 +9,7 @@ export async function listAlerts(): Promise<Alert[]> {
 export async function dismissAlert(alertId: number): Promise<void> {
   await request<void>(`${environment.apiBaseUrl}/alerts/${encodeURIComponent(alertId)}/dismiss`, {
     method: 'PATCH',
+    body: JSON.stringify({ householdId: environment.householdId }),
   })
 }
 

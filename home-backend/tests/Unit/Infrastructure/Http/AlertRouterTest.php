@@ -46,7 +46,7 @@ final class AlertRouterTest extends TestCase
         $dismissed = $router->dispatch([
             'REQUEST_METHOD' => 'PATCH',
             'PATH_INFO' => '/alerts/1/dismiss',
-            'php://input' => '{}'
+            'php://input' => '{"householdId":"house-42"}'
         ]);
         $this->assertSame(['dismissed' => true, 'id' => 1], $dismissed);
 
@@ -83,11 +83,15 @@ final class InMemoryAlertRepository implements AlertRepositoryInterface
         return $alert;
     }
 
-    public function dismiss(int $id): void
+    public function dismiss(int $id, string $householdId): bool
     {
-        if (isset($this->alerts[$id])) {
-            $this->alerts[$id]->dismiss();
+        if (!isset($this->alerts[$id]) || $this->alerts[$id]->householdId() !== $householdId) {
+            return false;
         }
+
+        $this->alerts[$id]->dismiss();
+
+        return true;
     }
 
     public function dismissAll(string $householdId): void

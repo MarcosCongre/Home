@@ -10,6 +10,7 @@ use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use DateTimeImmutable;
+use Throwable;
 
 final class CompleteTaskHandler
 {
@@ -40,16 +41,21 @@ final class CompleteTaskHandler
                 )
                 : sprintf('Tarea completada: "%s".', $task->title()->value());
 
-            $alertHandler = new CreateAlertHandler($this->alertRepository);
-            $alertHandler->handle(new CreateAlertCommand(
-                householdId: $task->householdId(),
-                memberId: $memberId,
-                title: 'Tarea completada',
-                body: $description,
-                icon: 'check-circle',
-                urgent: false,
-                createdAt: new DateTimeImmutable()
-            ));
+            // The task is already persisted; an alert failure must not fail the request.
+            try {
+                $alertHandler = new CreateAlertHandler($this->alertRepository);
+                $alertHandler->handle(new CreateAlertCommand(
+                    householdId: $task->householdId(),
+                    memberId: $memberId,
+                    title: 'Tarea completada',
+                    body: $description,
+                    icon: 'check-circle',
+                    urgent: false,
+                    createdAt: new DateTimeImmutable()
+                ));
+            } catch (Throwable $exception) {
+                error_log(sprintf('Unable to create task completion alert: %s', $exception->getMessage()));
+            }
         }
 
         return $task;

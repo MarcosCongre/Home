@@ -6,6 +6,7 @@ namespace App\Application\Alerts\ListAlerts;
 
 use App\Domain\Alerts\Alert;
 use App\Domain\Alerts\AlertRepositoryInterface;
+use App\Domain\Alerts\AlertStatus;
 
 final class ListAlertsHandler
 {
@@ -19,7 +20,10 @@ final class ListAlertsHandler
      */
     public function handle(ListAlertsQuery $query): array
     {
-        $alerts = $this->alertRepository->findByHousehold($query->householdId);
+        $alerts = array_values(array_filter(
+            $this->alertRepository->findByHousehold($query->householdId),
+            static fn (Alert $alert): bool => $alert->status() !== AlertStatus::DISMISSED
+        ));
 
         usort(
             $alerts,

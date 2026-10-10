@@ -35,7 +35,7 @@ function memberReducer(state: MemberState, action: MemberAction): MemberState {
       return { users: action.users, isLoading: false, error: null }
 
     case 'load-failure':
-      return { users: [], isLoading: false, error: 'Unable to load members. Check the API connection and retry.' }
+      return { users: [], isLoading: false, error: 'No se pudieron cargar los miembros. Verifica la conexión con la API e intenta de nuevo.' }
 
     case 'set-users':
       return { ...state, users: action.users }

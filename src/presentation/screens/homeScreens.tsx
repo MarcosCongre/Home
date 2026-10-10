@@ -12,6 +12,13 @@ import {
 import { Avatar } from '@/presentation/shared/Avatar'
 import { Badge } from '@/presentation/shared/Badge'
 import { TaskModal, type TaskFormData } from '@/presentation/screens/TaskModal'
+import {
+  categoryLabel,
+  dayLabel,
+  es,
+  priorityLabel,
+  recurrenceLabel,
+} from '@/presentation/i18n/es'
 
 export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
   tasks: Task[]
@@ -27,13 +34,13 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
-        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest mb-0.5">Wednesday, 16 Sep</p>
-        <h1 className="font-display text-[28px] text-[#3D2E1E] leading-tight">Good morning,<br /><em>Maya</em> 🌤</h1>
+        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest mb-0.5">{es.dashboard.date}</p>
+        <h1 className="font-display text-[28px] text-[#3D2E1E] leading-tight">{es.dashboard.greeting}<br /><em>Maya</em> 🌤</h1>
         <div className="flex gap-3 mt-4">
           {[
-            { label: 'Total', val: tasks.length, color: '#3D2E1E' },
-            { label: 'Done', val: done, color: '#6B7C4E' },
-            { label: 'Pending', val: tasks.length - done, color: '#C4623A' },
+            { label: es.dashboard.total, val: tasks.length, color: '#3D2E1E' },
+            { label: es.dashboard.done, val: done, color: '#6B7C4E' },
+            { label: es.dashboard.pending, val: tasks.length - done, color: '#C4623A' },
           ].map(s => (
             <div key={s.label} className="flex-1 bg-white rounded-2xl px-3 py-2.5 text-center shadow-sm">
               <p className="text-xl font-semibold" style={{ color: s.color }}>{s.val}</p>
@@ -47,7 +54,7 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
             style={{ width: `${Math.round((done / tasks.length) * 100)}%` }}
           />
         </div>
-        <p className="text-[10px] text-[#A89880] mt-1">{Math.round((done / tasks.length) * 100)}% complete this week</p>
+        <p className="text-[10px] text-[#A89880] mt-1">{es.dashboard.completeThisWeek(Math.round((done / tasks.length) * 100))}</p>
       </div>
 
       <div className="flex gap-2 px-5 py-3 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
@@ -60,7 +67,7 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
               ? { background: '#3D2E1E', color: '#F6EFE3' }
               : { background: '#EDE4D4', color: '#A89880' }}
           >
-            {cat}
+            {categoryLabel(cat)}
           </button>
         ))}
       </div>
@@ -88,8 +95,8 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
                   {task.title}
                 </p>
                 <div className="flex items-center gap-1.5 mt-1">
-                  <Badge label={task.category} color={catColor} />
-                  <Badge label={task.recurrence} color="#A89880" />
+                  <Badge label={categoryLabel(task.category)} color={catColor} />
+                  <Badge label={recurrenceLabel(task.recurrence)} color="#A89880" />
                   {task.time && task.time !== '—' && (
                     <span className="text-[10px] text-[#A89880]">· {task.time}</span>
                   )}
@@ -125,11 +132,13 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
       <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Week of Sep 15</p>
-            <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">Calendar</h2>
+            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{es.calendar.weekOf}</p>
+            <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">{es.calendar.title}</h2>
           </div>
           <button
             onClick={() => setTaskModal('add')}
+            aria-label={es.calendar.addTask}
+            title={es.calendar.addTask}
             className="w-9 h-9 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
           >
             +
@@ -146,7 +155,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
                 ? { background: '#C4623A', color: '#fff' }
                 : { background: '#EDE4D4', color: '#A89880' }}
             >
-              {d}
+              {d === 'All' ? es.common.allDays : dayLabel(d)}
             </button>
           ))}
         </div>
@@ -157,7 +166,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
             className="text-[11px] font-medium px-3 py-1 rounded-full transition-all"
             style={filterUser === null ? { background: '#3D2E1E', color: '#fff' } : { background: '#EDE4D4', color: '#A89880' }}
           >
-            All
+            {es.common.all}
           </button>
           {users.map(u => (
             <button
@@ -175,7 +184,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
 
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
         {dayTasks.length === 0 && (
-          <div className="text-center text-[#A89880] text-sm pt-10">No tasks for {activeDay}</div>
+          <div className="text-center text-[#A89880] text-sm pt-10">{activeDay === 'All' ? es.calendar.noTasks : es.calendar.noTasksFor(dayLabel(activeDay))}</div>
         )}
         {dayTasks.map(task => {
           const user = userOf(task.assignee)
@@ -192,8 +201,8 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
                   <div>
                     <p className={`text-sm font-medium ${task.done ? 'line-through text-[#A89880]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
                     <div className="flex gap-1.5 mt-1">
-                      <Badge label={task.category} color={catColor} />
-                      <Badge label={task.recurrence} color="#A89880" />
+                      <Badge label={categoryLabel(task.category)} color={catColor} />
+                      <Badge label={recurrenceLabel(task.recurrence)} color="#A89880" />
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 ml-3">
@@ -239,22 +248,22 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
   const userByInitial = (initial: string | null) => initial
     ? users.find(u => u.avatar === initial || u.name[0]?.toUpperCase() === initial.toUpperCase()) ?? null
     : null
-  const visible = alerts
+  const visible = alerts.filter(n => n.status !== 'dismissed')
   const urgent = visible.filter(n => n.urgent)
   const rest = visible.filter(n => !n.urgent)
 
   return (
     <div className="flex flex-col h-full">
       <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
-        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Today</p>
+        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{es.alerts.today}</p>
         <div className="flex items-center justify-between mt-0.5">
-          <h2 className="font-display text-2xl text-[#3D2E1E]">Alerts</h2>
-          {alerts.length > 0 && (
+          <h2 className="font-display text-2xl text-[#3D2E1E]">{es.alerts.title}</h2>
+          {visible.length > 0 && (
             <button
               onClick={() => void onDismissAll()}
               className="text-[11px] text-[#A89880] font-medium"
             >
-              Clear all
+              {es.alerts.clearAll}
             </button>
           )}
         </div>
@@ -263,7 +272,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
       <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
         {urgent.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#C4623A] mb-2">Needs attention</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#C4623A] mb-2">{es.alerts.needsAttention}</p>
             <div className="space-y-2">
               {urgent.map(n => {
                 const user = n.user ? userByInitial(n.user) : null
@@ -274,7 +283,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-[#3D2E1E]">{n.title}</p>
-                          <button onClick={() => void onDismiss(n.id)} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
+                          <button onClick={() => void onDismiss(n.id)} aria-label={es.common.dismiss} title={es.common.dismiss} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
                         </div>
                         <p className="text-[12px] text-[#A89880] mt-0.5 leading-relaxed">{n.body}</p>
                         <div className="flex items-center gap-2 mt-2">
@@ -292,7 +301,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
 
         {rest.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">Earlier</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">{es.alerts.earlier}</p>
             <div className="space-y-2">
               {rest.map(n => {
                 const user = n.user ? userByInitial(n.user) : null
@@ -303,7 +312,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-[#3D2E1E]">{n.title}</p>
-                          <button onClick={() => void onDismiss(n.id)} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
+                          <button onClick={() => void onDismiss(n.id)} aria-label={es.common.dismiss} title={es.common.dismiss} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
                         </div>
                         <p className="text-[12px] text-[#A89880] mt-0.5 leading-relaxed">{n.body}</p>
                         <div className="flex items-center gap-2 mt-1.5">
@@ -322,7 +331,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
         {visible.length === 0 && (
           <div className="text-center pt-16">
             <p className="text-4xl mb-3">🌿</p>
-            <p className="text-sm font-medium text-[#A89880]">All caught up!</p>
+            <p className="text-sm font-medium text-[#A89880]">{es.alerts.allCaughtUp}</p>
           </div>
         )}
       </div>
@@ -361,7 +370,7 @@ export function MemberModal({
       >
         <div className="w-10 h-1 rounded-full bg-[#D8CEBC] mx-auto mb-5" />
         <h3 className="font-display text-xl text-[#3D2E1E] mb-4">
-          {initial ? 'Edit member' : 'Add member'}
+          {initial ? es.members.editMember : es.members.addMember}
         </h3>
 
         <div className="flex justify-center mb-5">
@@ -373,16 +382,16 @@ export function MemberModal({
           </span>
         </div>
 
-        <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">Name</label>
+        <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.members.name}</label>
         <input
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="Member name"
+          placeholder={es.members.namePlaceholder}
           className="w-full bg-white rounded-xl px-4 py-3 text-sm text-[#3D2E1E] outline-none border border-transparent focus:border-[#C4623A] transition-colors mb-4"
           autoFocus
         />
 
-        <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-2">Color</label>
+        <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-2">{es.members.color}</label>
         <div className="grid grid-cols-6 gap-2 mb-5">
           {PALETTE.map(c => (
             <button
@@ -404,7 +413,7 @@ export function MemberModal({
             onClick={onClose}
             className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#A89880] text-sm font-semibold"
           >
-            Cancel
+            {es.common.cancel}
           </button>
           <button
             onClick={() => { if (name.trim()) onSave({ name: name.trim(), avatar, color }) }}
@@ -412,7 +421,7 @@ export function MemberModal({
             className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold transition-opacity disabled:opacity-40"
             style={{ background: '#C4623A' }}
           >
-            {initial ? 'Save changes' : 'Add member'}
+            {initial ? es.common.saveChanges : es.members.addMember}
           </button>
         </div>
       </div>
@@ -439,19 +448,19 @@ export function ConfirmDelete({ user, taskCount, onConfirm, onClose }: {
         <div className="flex justify-center mb-3">
           <Avatar user={user} size={52} />
         </div>
-        <h3 className="font-display text-xl text-[#3D2E1E] text-center mb-1">Remove {user.name}?</h3>
+        <h3 className="font-display text-xl text-[#3D2E1E] text-center mb-1">{es.members.removeTitle(user.name)}</h3>
         {taskCount > 0 && (
           <p className="text-xs text-[#A89880] text-center mb-4">
-            Their {taskCount} task{taskCount !== 1 ? 's' : ''} will become unassigned.
+            {es.members.unassignWarning(taskCount)}
           </p>
         )}
         {taskCount === 0 && <div className="mb-4" />}
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#A89880] text-sm font-semibold">
-            Cancel
+            {es.common.cancel}
           </button>
           <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl bg-[#B53A3A] text-white text-sm font-semibold">
-            Remove
+            {es.members.remove}
           </button>
         </div>
       </div>
@@ -483,21 +492,21 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
     <div className="flex flex-col h-full">
       <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
         <button onClick={onBack} className="flex items-center gap-1 text-[#A89880] text-sm mb-3">
-          <span>←</span> <span>Back</span>
+          <span>←</span> <span>{es.common.back}</span>
         </button>
         <div className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full"
             style={{ background: categoryColor[task.category] ?? '#888' }}
           />
-          <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{task.category}</p>
+          <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{categoryLabel(task.category)}</p>
         </div>
         <h2 className="font-display text-2xl text-[#3D2E1E] mt-1 leading-snug">{task.title}</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">Task name</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.taskName}</label>
           <input
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -506,7 +515,7 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">Assigned to</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.assignedTo}</label>
           <div className="flex gap-2">
             {users.map(u => (
               <button
@@ -525,7 +534,7 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">Recurrence</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.recurrence}</label>
           <div className="grid grid-cols-3 gap-2">
             {RECURRENCES.map(r => (
               <button
@@ -536,42 +545,42 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
                   ? { background: '#3D2E1E', color: '#F6EFE3' }
                   : { background: '#fff', color: '#A89880' }}
               >
-                {r}
+                {recurrenceLabel(r)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">Priority</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.priority}</label>
           <div className="flex gap-2">
             {(['low', 'med', 'high'] as const).map(p => (
               <button
                 key={p}
                 onClick={() => setPriority(p)}
-                className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all capitalize"
+                className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={priority === p
                   ? { background: priorityColors[p], color: '#fff' }
                   : { background: '#fff', color: '#A89880' }}
               >
-                {p === 'med' ? 'Medium' : p.charAt(0).toUpperCase() + p.slice(1)}
+                {priorityLabel(p)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">Completion history</label>
+          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.taskDetail.completionHistory}</label>
           <div className="bg-white rounded-xl divide-y divide-[#F6EFE3]">
             {task.history.length === 0 && (
-              <p className="text-xs text-[#A89880] px-4 py-3">No history yet</p>
+              <p className="text-xs text-[#A89880] px-4 py-3">{es.taskDetail.noHistory}</p>
             )}
             {task.history.map((h, i) => {
               const u = users.find(u => u.id === task.assignee)
               return (
                 <div key={i} className="flex items-center gap-3 px-4 py-3">
                   <span className="w-5 h-5 rounded-full bg-[#D8E4C8] flex items-center justify-center text-[#6B7C4E] text-xs">✓</span>
-                  <span className="text-xs text-[#3D2E1E]">Completed {h}</span>
+                  <span className="text-xs text-[#3D2E1E]">{es.taskDetail.completedOn(h)}</span>
                   {u && <Avatar user={u} size={18} />}
                 </div>
               )
@@ -585,7 +594,7 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
           onClick={save}
           className="w-full py-3.5 rounded-2xl bg-[#C4623A] text-white text-sm font-semibold tracking-wide"
         >
-          Save changes
+          {es.common.saveChanges}
         </button>
       </div>
     </div>
@@ -629,19 +638,21 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
       <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
         {selected ? (
           <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-[#A89880] text-sm mb-3">
-            <span>←</span> <span>All members</span>
+            <span>←</span> <span>{es.members.allMembers}</span>
           </button>
         ) : null}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">Household</p>
+            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{es.members.household}</p>
             <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">
-              {selectedUser ? selectedUser.name : 'Members'}
+              {selectedUser ? selectedUser.name : es.members.title}
             </h2>
           </div>
           {!selected && (
             <button
               onClick={() => setModal('add')}
+              aria-label={es.members.addMember}
+              title={es.members.addMember}
               className="w-9 h-9 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
             >
               +
@@ -652,14 +663,16 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
               <button
                 onClick={() => setModal('edit')}
                 className="w-8 h-8 rounded-full bg-[#EDE4D4] flex items-center justify-center text-sm"
-                title="Edit"
+                title={es.members.edit}
+                aria-label={es.members.edit}
               >
                 ✎
               </button>
               <button
                 onClick={() => setDeleteTarget(selected)}
                 className="w-8 h-8 rounded-full bg-[#F5D4C2] flex items-center justify-center text-sm"
-                title="Delete"
+                title={es.members.delete}
+                aria-label={es.members.delete}
               >
                 🗑
               </button>
@@ -673,7 +686,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
           {users.length === 0 && (
             <div className="text-center pt-12">
               <p className="text-3xl mb-2">👥</p>
-              <p className="text-sm text-[#A89880]">No members yet. Add one!</p>
+              <p className="text-sm text-[#A89880]">{es.members.empty}</p>
             </div>
           )}
           {stats.map(u => (
@@ -686,7 +699,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
                 <Avatar user={u} size={44} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#3D2E1E]">{u.name}</p>
-                  <p className="text-[11px] text-[#A89880]">{u.done} of {u.total} tasks done this week</p>
+                  <p className="text-[11px] text-[#A89880]">{es.members.doneThisWeek(u.done, u.total)}</p>
                   <div className="mt-2 h-1.5 rounded-full bg-[#EDE4D4]">
                     <div className="h-full rounded-full transition-all" style={{ width: `${u.pct}%`, background: u.color }} />
                   </div>
@@ -698,13 +711,13 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
 
           {users.length > 0 && tasks.length > 0 && (
             <div className="bg-[#3D2E1E] rounded-2xl px-4 py-4 mt-1">
-              <p className="text-[10px] text-[#A89880] uppercase tracking-widest mb-2">Household total</p>
+              <p className="text-[10px] text-[#A89880] uppercase tracking-widest mb-2">{es.members.householdTotal}</p>
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-3xl font-display text-[#F6EFE3]">
                     {Math.round((tasks.filter(t => t.done).length / tasks.length) * 100)}%
                   </p>
-                  <p className="text-xs text-[#A89880] mt-0.5">Weekly completion</p>
+                  <p className="text-xs text-[#A89880] mt-0.5">{es.members.weeklyCompletion}</p>
                 </div>
                 <div className="flex -space-x-2">
                   {users.map(u => <Avatar key={u.id} user={u} size={28} />)}
@@ -720,18 +733,18 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
               <Avatar user={selectedUser} size={48} />
               <div>
                 <p className="font-semibold text-lg">{selectedUser.name}</p>
-                <p className="text-sm opacity-80">{selectedStat.done} done · {selectedStat.total - selectedStat.done} pending</p>
+                <p className="text-sm opacity-80">{es.members.doneAndPending(selectedStat.done, selectedStat.total - selectedStat.done)}</p>
               </div>
             </div>
             <div className="mt-3 h-2 rounded-full bg-white/30">
               <div className="h-full rounded-full bg-white transition-all" style={{ width: `${selectedStat.pct}%` }} />
             </div>
-            <p className="text-xs opacity-70 mt-1">{selectedStat.pct}% complete</p>
+            <p className="text-xs opacity-70 mt-1">{es.members.percentComplete(selectedStat.pct)}</p>
           </div>
 
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">Assigned tasks</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">{es.members.assignedTasks}</p>
           {userTasks.length === 0 && (
-            <p className="text-xs text-[#A89880] text-center pt-4">No tasks assigned</p>
+            <p className="text-xs text-[#A89880] text-center pt-4">{es.members.noTasksAssigned}</p>
           )}
           <div className="space-y-2">
             {userTasks.map(task => (
@@ -745,8 +758,8 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium ${task.done ? 'line-through text-[#A89880]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
                   <div className="flex gap-1.5 mt-0.5">
-                    <Badge label={task.category} color={categoryColor[task.category] ?? '#888'} />
-                    <Badge label={task.recurrence} color="#A89880" />
+                    <Badge label={categoryLabel(task.category)} color={categoryColor[task.category] ?? '#888'} />
+                    <Badge label={recurrenceLabel(task.recurrence)} color="#A89880" />
                   </div>
                 </div>
               </div>

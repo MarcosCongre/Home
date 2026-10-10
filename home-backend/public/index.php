@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
+use App\Domain\Alerts\AlertNotFoundException;
+use App\Infrastructure\Config\AppTimezone;
+use App\Infrastructure\Http\RouteNotFoundException;
 use App\Infrastructure\Http\Router;
 use App\Infrastructure\Persistence\PdoAlertRepository;
 use App\Infrastructure\Persistence\PdoMemberRepository;
@@ -20,6 +23,9 @@ if (is_file($envFile)) {
         putenv(trim($key) . '=' . trim($value));  
     }  
 }
+
+$appTimezone = AppTimezone::resolve(getenv('APP_TIMEZONE') ?: null);
+date_default_timezone_set($appTimezone->getName());
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
 $allowedOrigins = array_filter(array_map('trim', explode(',', getenv('CORS_ALLOWED_ORIGINS') ?: '*')));
@@ -49,15 +55,27 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
+    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'mysql') {
+        // Keep TIMESTAMP reads/writes in the app timezone (fixed offset per connection).
+        $pdo->exec(sprintf("SET time_zone = '%s'", AppTimezone::mysqlOffset($appTimezone)));
+    }
     $router = new Router(
         new PdoTaskRepository($pdo),
         new PdoMemberRepository($pdo),
         new PdoAlertRepository($pdo)
     );
     $request = $_SERVER;
-    $request['PATH_INFO'] = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $apiBasePath = rtrim((string) (getenv('API_BASE_PATH') ?: ''), '/');
+    if ($apiBasePath !== '' && ($requestPath === $apiBasePath || str_starts_with($requestPath, $apiBasePath . '/'))) {
+        $requestPath = substr($requestPath, strlen($apiBasePath)) ?: '/';
+    }
+    $request['PATH_INFO'] = $requestPath;
     $request['rawBody'] = file_get_contents('php://input') ?: '{}';
     echo json_encode($router->dispatch($request), JSON_THROW_ON_ERROR);
+} catch (RouteNotFoundException|AlertNotFoundException $exception) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Not found']);
 } catch (InvalidArgumentException $exception) {
     http_response_code(400);
     echo json_encode(['error' => $exception->getMessage()]);

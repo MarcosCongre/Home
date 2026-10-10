@@ -9,6 +9,8 @@ services:
     environment:
       APP_ENV: development
       APP_DEBUG: "true"
+      APP_TIMEZONE: America/Argentina/Buenos_Aires
+      TZ: America/Argentina/Buenos_Aires
       DB_HOST: mysql
       DB_PORT: 3306
       DB_DATABASE: home
@@ -30,6 +32,7 @@ services:
       MYSQL_USER: home
       MYSQL_PASSWORD: home
       MYSQL_ROOT_PASSWORD: root
+      TZ: America/Argentina/Buenos_Aires
     ports:
       - "3306:3306"
     volumes:
