@@ -15,7 +15,11 @@ interface AlertRepositoryInterface
 
     public function save(Alert $alert): Alert;
 
-    public function dismiss(int $id): void;
+    /**
+     * Dismisses the alert only when it belongs to the household.
+     * Returns false when no such alert exists in that household.
+     */
+    public function dismiss(int $id, string $householdId): bool;
 
     public function dismissAll(string $householdId): void;
 }

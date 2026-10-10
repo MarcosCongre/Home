@@ -173,8 +173,9 @@ final class FailingAlertRepository implements AlertRepositoryInterface
         throw new \RuntimeException('Alert storage unavailable');
     }
 
-    public function dismiss(int $id): void
+    public function dismiss(int $id, string $householdId): bool
     {
+        return false;
     }
 
     public function dismissAll(string $householdId): void
@@ -209,14 +210,16 @@ final class InMemoryAlertRepository implements AlertRepositoryInterface
         return $alert;
     }
 
-    public function dismiss(int $id): void
+    public function dismiss(int $id, string $householdId): bool
     {
         foreach ($this->alerts as $alert) {
-            if ($alert->id() === $id) {
+            if ($alert->id() === $id && $alert->householdId() === $householdId) {
                 $alert->dismiss();
-                return;
+                return true;
             }
         }
+
+        return false;
     }
 
     public function dismissAll(string $householdId): void

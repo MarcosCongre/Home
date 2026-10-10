@@ -88,12 +88,24 @@ final class PdoAlertRepository implements AlertRepositoryInterface
         return $alert;
     }
 
-    public function dismiss(int $id): void
+    public function dismiss(int $id, string $householdId): bool
     {
-        $statement = $this->pdo->prepare('UPDATE alerts SET status = :status WHERE id = :id');
+        // Check existence explicitly: MySQL rowCount() reports changed rows, not matched rows.
+        $exists = $this->pdo->prepare('SELECT 1 FROM alerts WHERE id = :id AND household_id = :householdId');
+        $exists->bindValue(':id', $id, PDO::PARAM_INT);
+        $exists->bindValue(':householdId', $householdId);
+        $exists->execute();
+        if ($exists->fetchColumn() === false) {
+            return false;
+        }
+
+        $statement = $this->pdo->prepare('UPDATE alerts SET status = :status WHERE id = :id AND household_id = :householdId');
         $statement->bindValue(':status', AlertStatus::DISMISSED->value);
         $statement->bindValue(':id', $id, PDO::PARAM_INT);
+        $statement->bindValue(':householdId', $householdId);
         $statement->execute();
+
+        return true;
     }
 
     public function dismissAll(string $householdId): void

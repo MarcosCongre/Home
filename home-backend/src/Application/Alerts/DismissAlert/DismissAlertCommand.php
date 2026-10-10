@@ -7,7 +7,8 @@ namespace App\Application\Alerts\DismissAlert;
 readonly class DismissAlertCommand
 {
     public function __construct(
-        public int $alertId
+        public int $alertId,
+        public string $householdId
     ) {
     }
 }
