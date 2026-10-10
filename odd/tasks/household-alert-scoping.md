@@ -24,7 +24,7 @@ Queued by the user as pending task 1 after `ui-spanish-locale` (2026-10-09).
 - Avatar lookup by initial, "Miembro #%d" leak, NaN% dashboard bug.
 
 ## Tasks
-- [x] T1 — Household-scoped alert dismiss + household-checked member lookup in alert serialization; frontend sends `householdId`. Route: delegated (writer; 2+ non-trivial backend files + tests + 1 frontend file). RED: `composer test` 51 tests, 5 failures (e.g. `Expected AlertNotFoundException.`, `Failed asserting that 'Intruder' is null.`, `Failed asserting that null is false.`). GREEN: `composer test` OK (51 tests, 189 assertions); `npx tsc --noEmit -p .` exit 0.
+- [x] T1 — Household-scoped alert dismiss + household-checked member lookup in alert serialization; frontend sends `householdId`. Route: delegated (writer; 2+ non-trivial backend files + tests + 1 frontend file). RED: `composer test` 51 tests, 5 failures (e.g. `Expected AlertNotFoundException.`, `Failed asserting that 'Intruder' is null.`, `Failed asserting that null is false.`). GREEN: `composer test` OK (51 tests, 189 assertions); `npx tsc --noEmit -p .` exit 0. Parent re-run `composer test` OK (51/189). Commit `09e1840`. RDD assess (`--base-ref 8a3d9e0 --committed-only`): medium (`executable_change` in `public/index.php`), 271 lines, `review_due: false` (`under_budget`).
 
 ## Acceptance criteria
 - Dismissing an alert with another household's id → 404 and the alert stays unread.
@@ -47,4 +47,4 @@ Queued by the user as pending task 1 after `ui-spanish-locale` (2026-10-09).
 - 2026-10-09: T1 implemented: `AlertRepositoryInterface::dismiss(int, string): bool` (existence checked via SELECT, not rowCount), new `Domain\Alerts\AlertNotFoundException` mapped to 404 in `public/index.php`, Router requires body `householdId` (400 when missing), serializer drops members of other households, frontend sends `householdId`.
 
 ## Next step
-Parent commits T1 and runs the RDD assessment.
+User: decide push/PR. Follow-ups: same household scoping for task/member endpoints; `dismiss-all` accepts empty `householdId`; no auth exists (householdId is client-supplied).
