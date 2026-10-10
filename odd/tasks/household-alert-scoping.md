@@ -47,4 +47,4 @@ Queued by the user as pending task 1 after `ui-spanish-locale` (2026-10-09).
 - 2026-10-09: T1 implemented: `AlertRepositoryInterface::dismiss(int, string): bool` (existence checked via SELECT, not rowCount), new `Domain\Alerts\AlertNotFoundException` mapped to 404 in `public/index.php`, Router requires body `householdId` (400 when missing), serializer drops members of other households, frontend sends `householdId`.
 
 ## Next step
-User: decide push/PR. Follow-ups: same household scoping for task/member endpoints; `dismiss-all` accepts empty `householdId`; no auth exists (householdId is client-supplied).
+FIRST: resume RDD review lineage `review-0fa48ce33be95224` (consent granted; base `88d363b`, 40 files, 1111 lines, high). The 4 concurrent reviewer captures were killed by low system memory before delivering. Resume via the bound STATUS and run each `review.capture-result` one at a time; never re-START. Then user: decide push/PR. Follow-ups: same household scoping for task/member endpoints; `dismiss-all` accepts empty `householdId`; no auth exists (householdId is client-supplied).
