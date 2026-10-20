@@ -30,7 +30,7 @@ On a real phone this duplicates the device status bar; on desktop the app stays 
 
 - [x] T1 — App shell (route: inline; App.tsx + mechanical overlay class changes in 2 screen files)
 - [x] T2 — Responsive screens (route: delegated writer; preparation trigger: full read of 806-line homeScreens.tsx). Includes R3-002 fix (error toast above modal overlays).
-- [ ] T3 — Polish and breakpoint verification
+- [ ] T3 — Polish and breakpoint verification. Scope from review `review-d3dd4f510e3995a7` (approved, acknowledged; T1+T2 range): add env(safe-area-inset-left/right) for landscape notched phones; make assignee button rows wrap in TaskDetail/TaskModal (360px and md grid cell); record visual check at 360/768/1280.
 
 ## Progress / evidence
 
