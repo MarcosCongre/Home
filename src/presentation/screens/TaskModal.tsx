@@ -46,15 +46,15 @@ export function TaskModal({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-end"
+      className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-6"
       style={{ background: 'rgba(61,46,30,0.45)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="w-full bg-[#F6EFE3] rounded-t-3xl px-5 pt-5 pb-8"
+        className="w-full max-h-[90dvh] overflow-y-auto bg-[#F6EFE3] rounded-t-3xl md:max-w-lg md:rounded-3xl px-5 pt-5 pb-[calc(env(safe-area-inset-bottom)+2rem)] md:pb-6"
         onClick={e => e.stopPropagation()}
       >
-        <div className="w-10 h-1 rounded-full bg-[#D8CEBC] mx-auto mb-5" />
+        <div className="w-10 h-1 rounded-full bg-[#D8CEBC] mx-auto mb-5 md:hidden" />
 
         <h3 className="font-display text-xl text-[#3D2E1E] mb-4">
           {initial ? es.taskModal.editTitle : es.taskModal.addTitle}
