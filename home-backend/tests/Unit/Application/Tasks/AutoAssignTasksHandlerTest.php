@@ -6,13 +6,18 @@ namespace Tests\Unit\Application\Tasks;
 
 use App\Application\Tasks\AutoAssignTasks\AutoAssignTasksCommand;
 use App\Application\Tasks\AutoAssignTasks\AutoAssignTasksHandler;
+use App\Application\Tasks\CreateTask\CreateTaskCommand;
+use App\Application\Tasks\CreateTask\CreateTaskHandler;
 use App\Domain\Alerts\Alert;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\Member;
 use App\Domain\Tasks\Task;
+use App\Domain\Tasks\TaskRepositoryInterface;
 use App\Domain\Tasks\TaskTitle;
 use App\Infrastructure\Persistence\InMemoryMemberRepository;
 use App\Infrastructure\Persistence\InMemoryTaskRepository;
+use App\Infrastructure\Persistence\PdoTaskRepository;
+use App\Infrastructure\Persistence\PdoTransactionRunner;
 use DateTimeImmutable;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -90,6 +95,88 @@ final class AutoAssignTasksHandlerTest extends TestCase
 
         $this->assertCount(1, $updated);
         $this->assertSame(1, $tasks->findById(1)?->assignedMemberId());
+    }
+
+    public function testATaskCreatedWithAnAssigneeKeepsItOnTheNextAutoAssign(): void
+    {
+        $tasks = new InMemoryTaskRepository();
+        $members = $this->membersOf('house-1', 2);
+        $created = (new CreateTaskHandler($tasks))->handle(new CreateTaskCommand(
+            title: 'Laundry',
+            householdId: 'house-1',
+            userId: 'user-1',
+            assignedMemberId: 1,
+            recurrence: 'Weekly'
+        ));
+
+        $this->assertNotNull($created->lastAssignedAt(), 'Creating with an assignee records the assignment date.');
+
+        $handler = new AutoAssignTasksHandler($tasks, $members, null, new LowestIdTieBreaker());
+        $updated = $handler->handle(new AutoAssignTasksCommand('house-1', new DateTimeImmutable('+1 hour')));
+
+        $this->assertSame([], $updated);
+        $this->assertSame(1, $tasks->findById($created->id())?->assignedMemberId());
+    }
+
+    public function testASaveFailureMidBatchLeavesNoPartialReassignment(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+        $repository = new PdoTaskRepository($pdo);
+        $repository->save($this->task(1, 'house-1', 'Weekly', assignee: 1, lastAssignedAt: '2026-10-01 12:00:00'));
+        $repository->save($this->task(2, 'house-1', 'Weekly', assignee: 2, lastAssignedAt: '2026-10-01 12:00:00'));
+        $alerts = new RecordingAlertRepository();
+
+        $failingOnSecondSave = new class ($repository) implements TaskRepositoryInterface {
+            private int $saves = 0;
+
+            public function __construct(private readonly TaskRepositoryInterface $inner)
+            {
+            }
+
+            public function save(Task $task): void
+            {
+                if (++$this->saves === 2) {
+                    throw new \RuntimeException('Disk full');
+                }
+                $this->inner->save($task);
+            }
+
+            public function findById(int $id): ?Task
+            {
+                return $this->inner->findById($id);
+            }
+
+            public function delete(int $id): void
+            {
+                $this->inner->delete($id);
+            }
+
+            public function findByHouseholdId(string $householdId): array
+            {
+                return $this->inner->findByHouseholdId($householdId);
+            }
+        };
+
+        $handler = new AutoAssignTasksHandler(
+            $failingOnSecondSave,
+            $this->membersOf('house-1', 2),
+            $alerts,
+            new LowestIdTieBreaker(),
+            new PdoTransactionRunner($pdo)
+        );
+
+        try {
+            $handler->handle(new AutoAssignTasksCommand('house-1', new DateTimeImmutable('2026-10-19 12:00:00')));
+            $this->fail('The save failure must propagate.');
+        } catch (\RuntimeException $exception) {
+            $this->assertSame('Disk full', $exception->getMessage());
+        }
+
+        $this->assertSame(1, $repository->findById(1)?->assignedMemberId(), 'The first save is rolled back.');
+        $this->assertSame(2, $repository->findById(2)?->assignedMemberId());
+        $this->assertFalse($pdo->inTransaction());
+        $this->assertSame([], $alerts->saved, 'No alerts are sent for a rolled-back batch.');
     }
 
     public function testItRequiresAHouseholdId(): void

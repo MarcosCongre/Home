@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Application\Tasks\AutoAssignTasks;
 
+use App\Application\Shared\ImmediateTransactionRunner;
+use App\Application\Shared\TransactionRunner;
 use App\Application\Tasks\AssignmentAlert\AssignmentAlertNotifier;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\Member;
@@ -18,14 +20,17 @@ use DateTimeImmutable;
 final class AutoAssignTasksHandler
 {
     private readonly TaskAssignmentPolicy $policy;
+    private readonly TransactionRunner $transactionRunner;
 
     public function __construct(
         private readonly TaskRepositoryInterface $taskRepository,
         private readonly MemberRepositoryInterface $memberRepository,
         private readonly ?AlertRepositoryInterface $alertRepository = null,
-        ?TieBreaker $tieBreaker = null
+        ?TieBreaker $tieBreaker = null,
+        ?TransactionRunner $transactionRunner = null
     ) {
         $this->policy = new TaskAssignmentPolicy($tieBreaker ?? new RandomTieBreaker());
+        $this->transactionRunner = $transactionRunner ?? new ImmediateTransactionRunner();
     }
 
     /**
@@ -45,18 +50,25 @@ final class AutoAssignTasksHandler
         );
 
         $decisions = $this->policy->assign($tasks, $memberIds, $now);
-        $notifier = new AssignmentAlertNotifier($this->alertRepository);
         $updated = [];
 
         foreach ($tasks as $task) {
-            if (!isset($decisions[$task->id()])) {
-                continue;
+            if (isset($decisions[$task->id()])) {
+                $updated[] = $task;
             }
+        }
 
-            $task->reassignTo($decisions[$task->id()], $now);
-            $this->taskRepository->save($task);
+        // All reassignments are persisted together; alerts go out only after the commit.
+        $this->transactionRunner->run(function () use ($updated, $decisions, $now): void {
+            foreach ($updated as $task) {
+                $task->reassignTo($decisions[$task->id()], $now);
+                $this->taskRepository->save($task);
+            }
+        });
+
+        $notifier = new AssignmentAlertNotifier($this->alertRepository);
+        foreach ($updated as $task) {
             $notifier->notify($task, $decisions[$task->id()]);
-            $updated[] = $task;
         }
 
         return $updated;

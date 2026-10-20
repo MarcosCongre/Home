@@ -12,6 +12,7 @@ use App\Infrastructure\Http\Router;
 use App\Infrastructure\Persistence\PdoAlertRepository;
 use App\Infrastructure\Persistence\PdoMemberRepository;
 use App\Infrastructure\Persistence\PdoTaskRepository;
+use App\Infrastructure\Persistence\PdoTransactionRunner;
 
 $envFile = dirname(__DIR__) . '/.env';  
 if (is_file($envFile)) {  
@@ -63,7 +64,8 @@ try {
     $router = new Router(
         new PdoTaskRepository($pdo),
         new PdoMemberRepository($pdo),
-        new PdoAlertRepository($pdo)
+        new PdoAlertRepository($pdo),
+        new PdoTransactionRunner($pdo)
     );
     $request = $_SERVER;
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';

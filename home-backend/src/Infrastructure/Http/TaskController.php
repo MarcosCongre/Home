@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http;
 
+use App\Application\Shared\TransactionRunner;
 use App\Application\Tasks\AutoAssignTasks\AutoAssignTasksCommand;
 use App\Application\Tasks\AutoAssignTasks\AutoAssignTasksHandler;
 use App\Application\Tasks\CompleteTask\CompleteTaskCommand;
@@ -27,7 +28,8 @@ final class TaskController
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
         private ?AlertRepositoryInterface $alertRepository = null,
-        private ?MemberRepositoryInterface $memberRepository = null
+        private ?MemberRepositoryInterface $memberRepository = null,
+        private ?TransactionRunner $transactionRunner = null
     ) {
     }
 
@@ -103,7 +105,12 @@ final class TaskController
             throw new \LogicException('Auto-assign requires a member repository.');
         }
 
-        $handler = new AutoAssignTasksHandler($this->taskRepository, $this->memberRepository, $this->alertRepository);
+        $handler = new AutoAssignTasksHandler(
+            $this->taskRepository,
+            $this->memberRepository,
+            $this->alertRepository,
+            transactionRunner: $this->transactionRunner
+        );
         $tasks = $handler->handle(new AutoAssignTasksCommand($householdId));
 
         return array_map(fn (Task $task): array => $this->serializeTask($task), $tasks);

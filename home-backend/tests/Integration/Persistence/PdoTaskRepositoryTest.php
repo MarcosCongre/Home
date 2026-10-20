@@ -148,4 +148,41 @@ final class PdoTaskRepositoryTest extends TestCase
         $this->assertSame(4, $updated->assignedMemberId());
         $this->assertSame('2026-10-26 12:00:00', $updated->lastAssignedAt()?->format('Y-m-d H:i:s'));
     }
+
+    public function testItReadsTimestampsBackInTheTimezoneUsedToWriteThem(): void
+    {
+        $previous = date_default_timezone_get();
+        date_default_timezone_set('Asia/Tokyo');
+
+        try {
+            $pdo = new \PDO('sqlite::memory:');
+            $repository = new PdoTaskRepository($pdo);
+            $createdAt = new \DateTimeImmutable('2026-10-01T08:00:00+00:00');
+            $completedAt = new \DateTimeImmutable('2026-10-02T09:00:00+00:00');
+            $assignedAt = new \DateTimeImmutable('2026-10-19T15:00:00+00:00');
+
+            $repository->save(new Task(
+                id: 300,
+                title: new \App\Domain\Tasks\TaskTitle('Mop floors'),
+                householdId: 'house-13',
+                createdAt: $createdAt,
+                completedAt: $completedAt,
+                assignedMemberId: 3,
+                recurrence: 'Weekly',
+                lastAssignedAt: $assignedAt
+            ));
+
+            $row = $pdo->query('SELECT last_assigned_at FROM tasks WHERE id = 300')->fetch(\PDO::FETCH_ASSOC);
+            $this->assertSame('2026-10-20 00:00:00', $row['last_assigned_at']);
+
+            $stored = $repository->findById(300);
+            $this->assertNotNull($stored);
+            $this->assertSame($createdAt->getTimestamp(), $stored->createdAt()->getTimestamp());
+            $this->assertSame($completedAt->getTimestamp(), $stored->completedAt()?->getTimestamp());
+            $this->assertSame($assignedAt->getTimestamp(), $stored->lastAssignedAt()?->getTimestamp());
+            $this->assertSame('Asia/Tokyo', $stored->lastAssignedAt()?->getTimezone()->getName());
+        } finally {
+            date_default_timezone_set($previous);
+        }
+    }
 }
