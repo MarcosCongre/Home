@@ -25,6 +25,15 @@ export async function reopenTask(taskId: number): Promise<Task> {
   return mapTaskDto(payload)
 }
 
+export async function autoAssignTasks(): Promise<Task[]> {
+  const payload = await request<TaskDto[]>(`${environment.apiBaseUrl}/tasks/auto-assign`, {
+    method: 'POST',
+    body: JSON.stringify({ householdId: environment.householdId }),
+  })
+
+  return payload.map(mapTaskDto)
+}
+
 export async function createTask(
   data: {
     title: string;

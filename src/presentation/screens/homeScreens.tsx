@@ -20,11 +20,13 @@ import {
   recurrenceLabel,
 } from '@/presentation/i18n/es'
 
-export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
+export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssign, isAutoAssigning = false }: {
   tasks: Task[]
   onSelect: (id: number) => void
   users: User[]
   onToggleComplete: (taskId: number, userId: number) => Promise<void>
+  onAutoAssign?: () => Promise<void>
+  isAutoAssigning?: boolean
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [filter, setFilter] = useState('All')
@@ -55,6 +57,16 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete }: {
           />
         </div>
         <p className="text-[10px] text-[#A89880] mt-1">{es.dashboard.completeThisWeek(Math.round((done / tasks.length) * 100))}</p>
+        {onAutoAssign && (
+          <button
+            onClick={() => void onAutoAssign()}
+            disabled={isAutoAssigning}
+            aria-busy={isAutoAssigning}
+            className="mt-3 w-full py-2 rounded-xl bg-[#C4623A] text-white text-xs font-semibold shadow-sm transition-opacity disabled:opacity-60"
+          >
+            {isAutoAssigning ? es.dashboard.autoAssigning : es.dashboard.autoAssign}
+          </button>
+        )}
       </div>
 
       <div className="flex gap-2 px-5 py-3 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>

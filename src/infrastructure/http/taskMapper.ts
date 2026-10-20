@@ -7,6 +7,7 @@ export type TaskDto = {
   householdId: string
   createdAt: string
   completedAt: string | null
+  lastAssignedAt?: string | null
   assignedMemberId?: number | null
   assignee?: number | null
   category?: string | null

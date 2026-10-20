@@ -23,9 +23,21 @@ export default function App() {
   const [tab, setTab] = useState('home')
   const [detailId, setDetailId] = useState<number | null>(null)
   const { users, addUser, updateUser, removeUser, loadMembers, error: memberError } = useMembers()
-  const { tasks, setTasks, completeTaskById, loadTasks, createTask, updateTask, error: taskError } = useTasks()
+  const {
+    tasks,
+    setTasks,
+    completeTaskById,
+    loadTasks,
+    createTask,
+    updateTask,
+    error: taskError,
+    autoAssign,
+    isAutoAssigning,
+    autoAssignFailed,
+    canAutoAssign,
+  } = useTasks()
   const { alerts, dismissAlert, dismissAll, unreadCount } = useAlerts()
-  const error = memberError ?? taskError
+  const error = memberError ?? taskError ?? (autoAssignFailed ? es.dashboard.autoAssignFailed : null)
 
   const openDetail = (id: number) => {
     setDetailId(id)
@@ -78,7 +90,14 @@ export default function App() {
             {detailId && tab === 'detail' ? (
               <TaskDetail taskId={detailId} tasks={tasks} setTasks={setTasks} onBack={backFromDetail} users={users} />
             ) : tab === 'home' ? (
-              <Dashboard tasks={tasks} onSelect={openDetail} users={users} onToggleComplete={completeTaskById} />
+              <Dashboard
+                tasks={tasks}
+                onSelect={openDetail}
+                users={users}
+                onToggleComplete={completeTaskById}
+                onAutoAssign={canAutoAssign ? autoAssign : undefined}
+                isAutoAssigning={isAutoAssigning}
+              />
             ) : tab === 'calendar' ? (
               <CalendarView
                 tasks={tasks}
