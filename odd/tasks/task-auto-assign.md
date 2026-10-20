@@ -41,8 +41,13 @@ User request (2026-10-19): random assignment that respects task characteristics 
   - RED: `composer test` -> `Tests: 111, Assertions: 298, Errors: 1` (`PdoTransactionRunner` not found in the mid-batch failure test). The two other new tests passed on first run (see notes).
   - GREEN: `composer test` -> `OK (111 tests, 303 assertions)`; `php -l public/index.php` -> no syntax errors.
   - Notes: R3-create-assignee-no-date refuted by evidence: `CreateTaskHandler` routes the assignee through `Task::update`, which stamps `lastAssignedAt` when the assignee changes from null; regression test `testATaskCreatedWithAnAssigneeKeepsItOnTheNextAutoAssign` kept. R3-tz-parse refuted: `DbDateTime::format` writes in `date_default_timezone_get()` (the app timezone, set in `index.php`) and the bare `new DateTimeImmutable` read uses the same default zone, like `created_at`/`completed_at`; regression test `testItReadsTimestampsBackInTheTimezoneUsedToWriteThem` (Asia/Tokyo) kept, no code change. R3-non-atomic-loop fixed: `App\Application\Shared\TransactionRunner` port, `ImmediateTransactionRunner` default (in-memory), `App\Infrastructure\Persistence\PdoTransactionRunner` (joins an open transaction, rolls back and rethrows on failure), wired `index.php` -> `Router` -> `TaskController` -> `AutoAssignTasksHandler`. Alerts are now sent after the commit, so a rolled-back batch sends none.
-- [ ] T2 — Frontend API + button + refresh. Route: delegated (same writer context, preparation trigger).
-- [ ] T3 — Deploy (migration + code) to the home server. Route: inline, only on user request.
+  - RDD: assess `43ea133..2cc4e4b` -> medium, `review_due` false (`under_budget`); pending in slice.
+- [x] T2 — Frontend API + button + refresh. Route: delegated (same writer context, preparation trigger).
+  - Test-first exception: no frontend test runner exists (documented); checks are build + typecheck.
+  - Checks: `pnpm build` -> exit 0 (built); `pnpm exec tsc --noEmit` -> exit 0, no errors.
+  - Notes: `autoAssignTasks()` in `taskApi.ts` posts `{ householdId }` read from `environment` (same pattern as `listTasks`/`createTask`). `TaskDto` gained optional `lastAssignedAt` (not mapped into the domain; unused by the UI). `useTasks` adds `autoAssign`, `isAutoAssigning`, `autoAssignFailed`, `canAutoAssign`; returned tasks are merged into state by id because the backend returns only changed tasks. Failure is a flag rendered through `es.dashboard.autoAssignFailed` in the existing global error banner; "Reintentar" (reload) clears it. "Repartir tareas" button sits on the Dashboard header, disabled with `aria-busy` while running. Demo mode has no backend, so the button is hidden (`canAutoAssign = !environment.demoMode`). `src/App.tsx` was added to the allowed edit surface with user approval (the single `useTasks()` instance and the error banner live there).
+- [x] T3 — Deploy (migration + code) to the home server. Route: inline, only on user request. Evidence (2026-10-20): user applied migration 003 manually (`sudo mariadb home`; `SHOW COLUMNS ... last_assigned_at` -> timestamp, NULL); remote `.env` read was blocked by the Claude Code permission classifier, so the agent did not touch the DB. `deploy/deploy.sh` deployed `344411d` -> "Deployed to /srv/homeapp"; `GET /` 200; `GET /api/tasks?householdId=hh_001` -> 25 tasks, all `lastAssignedAt: null`. Auto-assign was not invoked against real data (it reassigns tasks and creates alerts); left to the user in the UI. Note: with `lastAssignedAt` null, the first auto-assign treats every recurring task as expired and may reassign all of them.
+- RDD: assess `43ea133..344411d` -> medium, `review_due` false (`under_budget`); pending in slice.
 
 ## Acceptance criteria
 - A weekly task assigned 3 days ago keeps its assignee after auto-assign; one assigned 8 days ago rotates to a different member.
@@ -58,6 +63,7 @@ User request (2026-10-19): random assignment that respects task characteristics 
 - 2026-10-19: document created on branch `feat/task-auto-assign`.
 - 2026-10-19: T1 done (backend auto-assign, migration `003_add_task_last_assigned_at.sql`, tests green). ~1016 authored changed lines (≈419 src+migration, ≈597 tests), above the ~400 budget.
 - 2026-10-20: T1b done (transactional auto-assign; two review findings refuted with regression tests). Tests green.
+- 2026-10-20: T2 done (frontend auto-assign button; build + typecheck green). 103 authored changed lines in `src` (+97/-6).
 
 ## Next step
-T2 (frontend). Server deploy (T3) must apply migration 003 before the new backend code.
+User tries "Repartir tareas" in the UI. After the `fix/task-reopen` PR merges: rebase on `main`, open PR1 (backend) and PR2 (frontend) per `stacked-to-main` (user decision).

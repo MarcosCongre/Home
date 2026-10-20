@@ -84,6 +84,9 @@ export const es = {
     done: 'Hechas',
     pending: 'Pendientes',
     completeThisWeek: (pct: number) => `${pct}% completado esta semana`,
+    autoAssign: 'Repartir tareas',
+    autoAssigning: 'Repartiendo…',
+    autoAssignFailed: 'No se pudieron repartir las tareas. Intenta de nuevo.',
   },
   calendar: {
     weekOf: 'Semana del 15 sep',

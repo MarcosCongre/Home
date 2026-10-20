@@ -3,7 +3,7 @@ import { useCallback, useEffect, useReducer } from 'react'
 import type { Task } from '@/domain/tasks/task'
 import { INIT_TASKS } from '@/infrastructure/demo/demoData'
 import { environment } from '@/infrastructure/config/environment'
-import { completeTask as completeTaskRequest, createTask as createTaskRequest, deleteTask as deleteTaskRequest, listTasks, reopenTask as reopenTaskRequest, updateTask as updateTaskRequest } from '@/infrastructure/http/taskApi'
+import { autoAssignTasks as autoAssignTasksRequest, completeTask as completeTaskRequest, createTask as createTaskRequest, deleteTask as deleteTaskRequest, listTasks, reopenTask as reopenTaskRequest, updateTask as updateTaskRequest } from '@/infrastructure/http/taskApi'
 
 type TaskFormInput = {
   title: string
@@ -20,6 +20,8 @@ type TaskState = {
   isLoading: boolean
   isEmpty: boolean
   error: string | null
+  isAutoAssigning: boolean
+  autoAssignFailed: boolean
 }
 
 type TaskAction =
@@ -29,21 +31,27 @@ type TaskAction =
   | { type: 'set-tasks'; tasks: Task[] }
   | { type: 'update-task'; taskId: number; updater: (task: Task) => Task }
   | { type: 'replace-task'; task: Task }
+  | { type: 'auto-assign-start' }
+  | { type: 'auto-assign-success'; tasks: Task[] }
+  | { type: 'auto-assign-failure' }
 
 const initialState: TaskState = {
   tasks: environment.demoMode ? INIT_TASKS : [],
   isLoading: false,
   isEmpty: environment.demoMode ? INIT_TASKS.length === 0 : true,
   error: null,
+  isAutoAssigning: false,
+  autoAssignFailed: false,
 }
 
 function taskReducer(state: TaskState, action: TaskAction): TaskState {
   switch (action.type) {
     case 'load-start':
-      return { ...state, isLoading: true, error: null }
+      return { ...state, isLoading: true, error: null, autoAssignFailed: false }
 
     case 'load-success':
       return {
+        ...state,
         tasks: action.tasks,
         isLoading: false,
         isEmpty: action.tasks.length === 0,
@@ -52,6 +60,7 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
 
     case 'load-failure':
       return {
+        ...state,
         tasks: [],
         isLoading: false,
         isEmpty: true,
@@ -88,6 +97,24 @@ function taskReducer(state: TaskState, action: TaskAction): TaskState {
         isEmpty: nextTasks.length === 0,
       }
     }
+
+    case 'auto-assign-start':
+      return { ...state, isAutoAssigning: true, autoAssignFailed: false }
+
+    case 'auto-assign-success': {
+      const updatedById = new Map(action.tasks.map(task => [task.id, task]))
+      const nextTasks = state.tasks.map(task => updatedById.get(task.id) ?? task)
+
+      return {
+        ...state,
+        tasks: nextTasks,
+        isEmpty: nextTasks.length === 0,
+        isAutoAssigning: false,
+      }
+    }
+
+    case 'auto-assign-failure':
+      return { ...state, isAutoAssigning: false, autoAssignFailed: true }
 
     default:
       return state
@@ -181,6 +208,22 @@ export function useTasks() {
     }, [replaceTask, state.tasks, updateTaskOptimistically]
   )
 
+  // Demo mode has no backend, so auto-assign is only offered against the API.
+  const canAutoAssign = !environment.demoMode
+
+  const autoAssign = useCallback(async () => {
+    if (!canAutoAssign) return
+
+    dispatch({ type: 'auto-assign-start' })
+
+    try {
+      const updated = await autoAssignTasksRequest()
+      dispatch({ type: 'auto-assign-success', tasks: updated })
+    } catch {
+      dispatch({ type: 'auto-assign-failure' })
+    }
+  }, [canAutoAssign])
+
   useEffect(() => {
     void loadTasks()
   }, [loadTasks])
@@ -190,6 +233,10 @@ export function useTasks() {
     isLoading: state.isLoading,
     isEmpty: state.isEmpty,
     error: state.error,
+    isAutoAssigning: state.isAutoAssigning,
+    autoAssignFailed: state.autoAssignFailed,
+    canAutoAssign,
+    autoAssign,
     setTasks,
     updateTask: updateTaskRequestById,
     replaceTask,
