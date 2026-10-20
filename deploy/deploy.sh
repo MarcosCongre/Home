@@ -22,7 +22,7 @@ trap 'rm -rf "$work"' EXIT
 # Same-origin API behind nginx, so no CORS and no host baked into the bundle.
 # MSYS2_ENV_CONV_EXCL stops Git Bash from rewriting /api into a Windows path.
 MSYS2_ENV_CONV_EXCL=VITE_API_BASE_URL VITE_API_BASE_URL=/api pnpm build
-if rg -q 'Program Files' dist; then
+if grep -rq 'Program Files' dist; then
   echo "Build baked a Windows path into dist/; aborting deploy." >&2
   exit 1
 fi
