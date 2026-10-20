@@ -122,4 +122,81 @@ final class TaskTest extends TestCase
 
         $task->complete();
     }
+
+    public function testANewTaskHasNoLastAssignmentDate(): void
+    {
+        $task = Task::create(
+            id: 460,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+
+        $this->assertNull($task->lastAssignedAt());
+    }
+
+    public function testUpdatingToADifferentAssigneeRecordsTheAssignmentDate(): void
+    {
+        $task = Task::create(
+            id: 461,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+
+        $task->update(title: 'Wash dishes', assignedMemberId: 4);
+
+        $this->assertSame(4, $task->assignedMemberId());
+        $this->assertNotNull($task->lastAssignedAt());
+    }
+
+    public function testUpdatingWithTheSameAssigneeKeepsTheAssignmentDate(): void
+    {
+        $assignedAt = new \DateTimeImmutable('2026-09-01 08:00:00');
+        $task = new Task(
+            id: 462,
+            title: new \App\Domain\Tasks\TaskTitle('Wash dishes'),
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-08-16 08:00:00'),
+            assignedMemberId: 4,
+            lastAssignedAt: $assignedAt
+        );
+
+        $task->update(title: 'Wash all dishes', assignedMemberId: 4);
+
+        $this->assertSame($assignedAt, $task->lastAssignedAt());
+    }
+
+    public function testUnassigningClearsTheAssignmentDate(): void
+    {
+        $task = new Task(
+            id: 463,
+            title: new \App\Domain\Tasks\TaskTitle('Wash dishes'),
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-08-16 08:00:00'),
+            assignedMemberId: 4,
+            lastAssignedAt: new \DateTimeImmutable('2026-09-01 08:00:00')
+        );
+
+        $task->update(title: 'Wash dishes', assignedMemberId: null);
+
+        $this->assertNull($task->assignedMemberId());
+        $this->assertNull($task->lastAssignedAt());
+    }
+
+    public function testReassigningRecordsTheMemberAndTheGivenDate(): void
+    {
+        $task = Task::create(
+            id: 464,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+        $at = new \DateTimeImmutable('2026-10-19 12:00:00');
+
+        $task->reassignTo(6, $at);
+
+        $this->assertSame(6, $task->assignedMemberId());
+        $this->assertSame($at, $task->lastAssignedAt());
+    }
 }

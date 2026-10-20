@@ -20,7 +20,8 @@ class Task
         private ?string $time = null,
         private ?string $category = null,
         private ?string $recurrence = null,
-        private string $priority = 'med'
+        private string $priority = 'med',
+        private ?DateTimeImmutable $lastAssignedAt = null
     ) {
     }
 
@@ -80,7 +81,10 @@ class Task
         ?string $priority = null
     ): void {
         $this->title = new TaskTitle($title);
-        $this->assignedMemberId = $assignedMemberId;
+        if ($assignedMemberId !== $this->assignedMemberId) {
+            $this->assignedMemberId = $assignedMemberId;
+            $this->lastAssignedAt = $assignedMemberId === null ? null : new DateTimeImmutable();
+        }
 
         if ($day !== null) {
             $this->day = $day;
@@ -102,6 +106,12 @@ class Task
             $this->status = $status;
             $this->completedAt = $status === TaskStatus::COMPLETED ? new DateTimeImmutable() : null;
         }
+    }
+
+    public function reassignTo(int $memberId, DateTimeImmutable $assignedAt): void
+    {
+        $this->assignedMemberId = $memberId;
+        $this->lastAssignedAt = $assignedAt;
     }
 
     public function id(): int
@@ -137,6 +147,11 @@ class Task
     public function assignedMemberId(): ?int
     {
         return $this->assignedMemberId;
+    }
+
+    public function lastAssignedAt(): ?DateTimeImmutable
+    {
+        return $this->lastAssignedAt;
     }
 
     public function day(): ?string

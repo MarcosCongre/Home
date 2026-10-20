@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http;
 
+use App\Application\Shared\TransactionRunner;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\MemberRepositoryInterface;
 use App\Domain\Tasks\TaskRepositoryInterface;
@@ -13,7 +14,8 @@ final class Router
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
         private ?MemberRepositoryInterface $memberRepository = null,
-        private ?AlertRepositoryInterface $alertRepository = null
+        private ?AlertRepositoryInterface $alertRepository = null,
+        private ?TransactionRunner $transactionRunner = null
     ) {
     }
 
@@ -32,6 +34,12 @@ final class Router
         if ($method === 'POST' && $path === '/tasks') {
             $controller = new TaskController($this->taskRepository, $this->alertRepository);
             return $controller->create($this->decodeJson($this->body($request)));
+        }
+
+        if ($this->memberRepository !== null && $method === 'POST' && $path === '/tasks/auto-assign') {
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository, $this->transactionRunner);
+            $payload = $this->decodeJson($this->body($request));
+            return $controller->autoAssign((string) ($payload['householdId'] ?? ''));
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {

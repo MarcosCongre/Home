@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Infrastructure\Http;
 
+use App\Domain\Members\Member;
 use App\Domain\Tasks\Task;
 use App\Infrastructure\Http\TaskController;
+use App\Infrastructure\Persistence\InMemoryMemberRepository;
 use App\Infrastructure\Persistence\InMemoryTaskRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -117,5 +119,30 @@ final class TaskControllerTest extends TestCase
 
         $this->assertCount(2, $tasks);
         $this->assertSame([1, 2], array_map(static fn (array $task): int => $task['id'], $tasks));
+    }
+
+    public function testItAutoAssignsHouseholdTasksAndSerializesTheAssignmentDate(): void
+    {
+        $repository = new InMemoryTaskRepository();
+        $repository->save(Task::create(
+            id: 30,
+            title: 'Mop floors',
+            householdId: 'house-7',
+            createdAt: new \DateTimeImmutable('2026-09-16 09:00:00'),
+            recurrence: 'Weekly'
+        ));
+        $members = new InMemoryMemberRepository();
+        $members->save(Member::create(0, 'Ana', 'A', '#C4963A', 'house-7'));
+
+        $controller = new TaskController($repository, null, $members);
+        $tasks = $controller->autoAssign('house-7');
+
+        $this->assertCount(1, $tasks);
+        $this->assertSame(30, $tasks[0]['id']);
+        $this->assertSame(1, $tasks[0]['assignedMemberId']);
+        $this->assertIsString($tasks[0]['lastAssignedAt']);
+
+        $listed = $controller->list('house-7');
+        $this->assertSame($tasks[0]['lastAssignedAt'], $listed[0]['lastAssignedAt']);
     }
 }
