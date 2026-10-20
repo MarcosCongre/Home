@@ -3,7 +3,7 @@ import { useCallback, useEffect, useReducer } from 'react'
 import type { Task } from '@/domain/tasks/task'
 import { INIT_TASKS } from '@/infrastructure/demo/demoData'
 import { environment } from '@/infrastructure/config/environment'
-import { completeTask as completeTaskRequest, createTask as createTaskRequest, deleteTask as deleteTaskRequest, listTasks, updateTask as updateTaskRequest } from '@/infrastructure/http/taskApi'
+import { completeTask as completeTaskRequest, createTask as createTaskRequest, deleteTask as deleteTaskRequest, listTasks, reopenTask as reopenTaskRequest, updateTask as updateTaskRequest } from '@/infrastructure/http/taskApi'
 
 type TaskFormInput = {
   title: string
@@ -170,13 +170,11 @@ export function useTasks() {
 
       updateTaskOptimistically(taskId, task => ({ ...task, done: nextDone }))
 
-      if (!nextDone) {
-        return
-      }
-
       try {
-        const completedTask = await completeTaskRequest(taskId, userId)
-        replaceTask(completedTask)
+        const savedTask = nextDone
+          ? await completeTaskRequest(taskId, userId)
+          : await reopenTaskRequest(taskId)
+        replaceTask(savedTask)
       } catch {
         updateTaskOptimistically(taskId, () => current)
       }
