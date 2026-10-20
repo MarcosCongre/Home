@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http;
 
+use App\Application\Tasks\AutoAssignTasks\AutoAssignTasksCommand;
+use App\Application\Tasks\AutoAssignTasks\AutoAssignTasksHandler;
 use App\Application\Tasks\CompleteTask\CompleteTaskCommand;
 use App\Application\Tasks\CompleteTask\CompleteTaskHandler;
 use App\Application\Tasks\CreateTask\CreateTaskCommand;
@@ -16,6 +18,7 @@ use App\Application\Tasks\UpdateTask\UpdateTaskCommand;
 use App\Application\Tasks\UpdateTask\UpdateTaskHandler;
 use App\Application\Tasks\DeleteTask\DeleteTaskHandler;
 use App\Domain\Alerts\AlertRepositoryInterface;
+use App\Domain\Members\MemberRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 
@@ -23,7 +26,8 @@ final class TaskController
 {
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
-        private ?AlertRepositoryInterface $alertRepository = null
+        private ?AlertRepositoryInterface $alertRepository = null,
+        private ?MemberRepositoryInterface $memberRepository = null
     ) {
     }
 
@@ -93,6 +97,21 @@ final class TaskController
     /**
      * @return array<int, array<string, mixed>>
      */
+    public function autoAssign(string $householdId): array
+    {
+        if ($this->memberRepository === null) {
+            throw new \LogicException('Auto-assign requires a member repository.');
+        }
+
+        $handler = new AutoAssignTasksHandler($this->taskRepository, $this->memberRepository, $this->alertRepository);
+        $tasks = $handler->handle(new AutoAssignTasksCommand($householdId));
+
+        return array_map(fn (Task $task): array => $this->serializeTask($task), $tasks);
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function list(string $householdId): array
     {
         $handler = new ListTasksHandler($this->taskRepository);
@@ -119,6 +138,7 @@ final class TaskController
             'category' => $task->category(),
             'recurrence' => $task->recurrence(),
             'priority' => $task->priority(),
+            'lastAssignedAt' => $task->lastAssignedAt()?->format(DATE_ATOM),
         ];
     }
 

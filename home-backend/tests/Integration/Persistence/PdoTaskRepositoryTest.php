@@ -110,4 +110,42 @@ final class PdoTaskRepositoryTest extends TestCase
         $this->assertSame($createdAt->getTimestamp(), $stored->createdAt()->getTimestamp());
         $this->assertSame($completedAt->getTimestamp(), $stored->completedAt()?->getTimestamp());
     }
+
+    public function testItPersistsTheLastAssignmentDate(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $repository = new PdoTaskRepository($pdo);
+        $assignedAt = new \DateTimeImmutable('2026-10-19T15:00:00+00:00');
+
+        $repository->save(new Task(
+            id: 201,
+            title: new \App\Domain\Tasks\TaskTitle('Take out trash'),
+            householdId: 'house-12',
+            createdAt: new \DateTimeImmutable('2026-10-01 08:00:00'),
+            assignedMemberId: 3,
+            recurrence: 'Weekly',
+            lastAssignedAt: $assignedAt
+        ));
+        $repository->save(new Task(
+            id: 202,
+            title: new \App\Domain\Tasks\TaskTitle('Unassigned'),
+            householdId: 'house-12',
+            createdAt: new \DateTimeImmutable('2026-10-02 08:00:00')
+        ));
+
+        $row = $pdo->query('SELECT last_assigned_at FROM tasks WHERE id = 201')->fetch(\PDO::FETCH_ASSOC);
+        $this->assertSame('2026-10-19 12:00:00', $row['last_assigned_at']);
+
+        $stored = $repository->findById(201);
+        $this->assertNotNull($stored);
+        $this->assertSame($assignedAt->getTimestamp(), $stored->lastAssignedAt()?->getTimestamp());
+        $this->assertNull($repository->findById(202)?->lastAssignedAt());
+
+        $stored->reassignTo(4, new \DateTimeImmutable('2026-10-26T15:00:00+00:00'));
+        $repository->save($stored);
+
+        $updated = $repository->findByHouseholdId('house-12')[0];
+        $this->assertSame(4, $updated->assignedMemberId());
+        $this->assertSame('2026-10-26 12:00:00', $updated->lastAssignedAt()?->format('Y-m-d H:i:s'));
+    }
 }

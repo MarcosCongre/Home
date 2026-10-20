@@ -34,6 +34,12 @@ final class Router
             return $controller->create($this->decodeJson($this->body($request)));
         }
 
+        if ($this->memberRepository !== null && $method === 'POST' && $path === '/tasks/auto-assign') {
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
+            $payload = $this->decodeJson($this->body($request));
+            return $controller->autoAssign((string) ($payload['householdId'] ?? ''));
+        }
+
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
             $controller = new TaskController($this->taskRepository, $this->alertRepository);
             return $controller->update($this->positiveId($matches[1]), $this->decodeJson($this->body($request)));
