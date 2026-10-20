@@ -24,7 +24,7 @@ Reported by the user (2026-10-19) on http://192.168.0.236/: most tasks show chec
 ## Tasks
 - [x] T1 — Backend reopen endpoint + 409 for task state conflicts, with tests (RED first). Route: delegated (writer trigger: 2+ non-trivial files).
 - [x] T2 — Frontend: call reopen on uncheck, roll back on failure. Route: delegated together with T1 (same writer, preparation trigger).
-- [ ] T3 — Redeploy with `deploy/deploy.sh`; verify uncheck/re-check against the server API. Route: inline.
+- [x] T3 — Redeploy with `deploy/deploy.sh`; verify uncheck/re-check against the server API. Route: inline. Evidence (2026-10-19): parent spot check `composer test` OK (58 tests, 209 assertions); deployed `63b008c`; server `PATCH /api/tasks/1/complete` (already completed) -> 409 `Task is already completed.`; `PATCH /api/tasks/15/reopen` (pending) -> 409 `Task is not completed.` (route live, no data changed). A full reopen/complete round trip was not run against real data because completing creates alerts; left to the user in the UI. RDD: assess on `47bf014..63b008c` -> medium, `review_due` false (`under_budget`).
 
 ## Acceptance criteria
 - Unchecking a completed task persists `pending` and clears `completedAt`.
@@ -49,4 +49,4 @@ Reported by the user (2026-10-19) on http://192.168.0.236/: most tasks show chec
   - Commit: the `fix(tasks)` commit that contains this progress entry.
 
 ## Next step
-T3: redeploy with `deploy/deploy.sh` and verify uncheck/re-check plus the 409 response against the server API.
+User confirms uncheck/re-check in the UI. Delivery (push/PR) is the user's decision. Out of scope follow-up: missing task still returns 500 instead of 404.
