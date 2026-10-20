@@ -58,12 +58,12 @@ export default function App() {
     <div className="h-dvh flex flex-col md:flex-row bg-[#EDE4D4] text-[#3D2E1E]">
       {error && (
         <div
-          className="fixed left-1/2 -translate-x-1/2 z-50 max-w-[calc(100%-2rem)] rounded-2xl bg-[#3D2E1E] text-[#F6EFE3] px-3 py-2 text-xs font-medium shadow-md flex items-center gap-3"
+          className="fixed left-1/2 -translate-x-1/2 z-[60] max-w-[calc(100%-2rem)] rounded-2xl bg-[#3D2E1E] text-[#F6EFE3] pl-4 pr-1 py-0.5 text-xs font-medium shadow-md flex items-center gap-3"
           style={{ top: 'calc(env(safe-area-inset-top) + 0.75rem)' }}
         >
           <span>{error}</span>
           <button
-            className="underline underline-offset-2 shrink-0"
+            className="min-h-11 px-3 underline underline-offset-2 shrink-0"
             onClick={() => {
               void loadMembers()
               void loadTasks()
@@ -108,7 +108,7 @@ export default function App() {
         className="flex-1 min-h-0 overflow-hidden bg-[#F6EFE3] md:bg-[#EDE4D4]"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="h-full w-full max-w-3xl mx-auto bg-[#EDE4D4] md:shadow-sm">
+        <div className="h-full w-full max-w-5xl mx-auto bg-[#EDE4D4] md:shadow-sm">
           {detailId && tab === 'detail' ? (
             <TaskDetail taskId={detailId} tasks={tasks} setTasks={setTasks} onBack={backFromDetail} users={users} />
           ) : tab === 'home' ? (
@@ -166,7 +166,7 @@ export default function App() {
               className="flex-1 flex flex-col items-center justify-center min-h-12 py-1.5 relative"
             >
               {t.id === 'alerts' && unreadCount > 0 && (
-                <span className="absolute top-1 left-1/2 ml-2 w-4 h-4 rounded-full bg-[#C4623A] text-white text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute top-1 left-1/2 ml-2 min-w-5 h-5 px-1 rounded-full bg-[#C4623A] text-white text-[11px] font-bold flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}

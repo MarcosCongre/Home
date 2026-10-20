@@ -29,13 +29,14 @@ On a real phone this duplicates the device status bar; on desktop the app stays 
 ## Tasks
 
 - [x] T1 — App shell (route: inline; App.tsx + mechanical overlay class changes in 2 screen files)
-- [ ] T2 — Responsive screens (route: TBD after T1)
+- [x] T2 — Responsive screens (route: delegated writer; preparation trigger: full read of 806-line homeScreens.tsx). Includes R3-002 fix (error toast above modal overlays).
 - [ ] T3 — Polish and breakpoint verification
 
 ## Progress / evidence
 
 - T1: done in `67310e7`. Checks: `tsc --noEmit` exit 0, `vite build` OK. Visual check at 360/1280 px pending (user). RDD: medium, lens review-reliability approved and acknowledged (lineage `review-724a482ceb4a874a`); advisory R3-002 (error toast hidden under modal overlays) scheduled for T2. Deployed `8d2c073` with `deploy/deploy.sh` (2026-10-20): `GET /` 200 serving `index-ov46KEGQ.js` with `viewport-fit=cover`, `GET /api/tasks` 200.
+- T2: delegated writer. Grids md:2 / xl:3 cols (dashboard, calendar, members, notifications), TaskDetail 2 cols on md, 44px touch targets, min text 11px (no text-[9px]/[10px] left), scrollable day/filter chips on mobile, main wrapper max-w-5xl, R3-002 fixed (toast z-[60]). Checks (parent re-run): `tsc --noEmit` exit 0, `vite build` OK. Open risk for T3: assignee button rows in TaskDetail/TaskModal do not wrap (many members may overflow at 360px).
 
 ## Next step
 
-User validates T1 visually, then T2 (responsive screens: grids on md+, font sizes, touch targets).
+T1 approved visually by the user (2026-10-20). Next: T3 (assignee row wrap, final breakpoint verification).

@@ -65,7 +65,7 @@ export function TaskModal({
             <button
                 key={d}
                 onClick={() => setActiveDay(d)}
-                className="flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all"
+                className="flex-1 min-h-11 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={activeDay === d
                 ? { background: '#C4623A', color: '#fff' }
                 : { background: '#EDE4D4', color: '#A89880' }}
@@ -94,8 +94,8 @@ export function TaskModal({
             />
         </div>
 
-        <div>
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.assignedTo}</label>
+        <div className="mt-4">
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.assignedTo}</label>
             <div className="flex gap-2">
             {users.map(u => (
                 <button
@@ -107,20 +107,20 @@ export function TaskModal({
                     : { borderColor: 'transparent', background: '#fff' }}
                 >
                 <Avatar user={u} size={30} />
-                <span className="text-[10px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
+                <span className="text-[11px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
                 </button>
             ))}
             </div>
         </div>
 
-        <div>
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.category}</label>
+        <div className="mt-4">
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.category}</label>
             <div className="grid grid-cols-3 gap-2">
             {CATEGORIES.map(r => (
                 <button
                 key={r}
                 onClick={() => setCategory(r)}
-                className="py-2 rounded-xl text-xs font-medium transition-all"
+                className="min-h-11 py-2 rounded-xl text-xs font-medium transition-all"
                 style={category === r
                     ? { background: '#3D2E1E', color: '#F6EFE3' }
                     : { background: '#fff', color: '#A89880' }}
@@ -131,14 +131,14 @@ export function TaskModal({
             </div>
         </div>
 
-        <div>
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.recurrence}</label>
+        <div className="mt-4">
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.recurrence}</label>
             <div className="grid grid-cols-3 gap-2">
             {RECURRENCES.map(r => (
                 <button
                 key={r}
                 onClick={() => setRecurrence(r)}
-                className="py-2 rounded-xl text-xs font-medium transition-all"
+                className="min-h-11 py-2 rounded-xl text-xs font-medium transition-all"
                 style={recurrence === r
                     ? { background: '#3D2E1E', color: '#F6EFE3' }
                     : { background: '#fff', color: '#A89880' }}
@@ -149,14 +149,14 @@ export function TaskModal({
             </div>
         </div>
 
-        <div>
-            <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.priority}</label>
+        <div className="mt-4">
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.priority}</label>
             <div className="flex gap-2">
             {(['low', 'med', 'high'] as const).map(p => (
                 <button
                 key={p}
                 onClick={() => setPriority(p)}
-                className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
+                className="flex-1 min-h-11 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={priority === p
                     ? { background: priorityColors[p], color: '#fff' }
                     : { background: '#fff', color: '#A89880' }}
@@ -168,7 +168,7 @@ export function TaskModal({
         </div>
 
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
             className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#A89880] text-sm font-semibold"
