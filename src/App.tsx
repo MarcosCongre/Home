@@ -173,12 +173,12 @@ export default function App() {
                   {unreadCount}
                 </span>
               )}
-              <span className="text-xl" style={{ filter: active ? 'none' : 'grayscale(1) opacity(0.4)' }}>
+              <span className="text-xl" style={{ filter: active ? 'none' : 'grayscale(1) opacity(0.65)' }}>
                 {t.icon}
               </span>
               <span
                 className="text-[11px] font-medium mt-0.5"
-                style={{ color: active ? '#C4623A' : '#A89880' }}
+                style={{ color: active ? '#C4623A' : '#6E604E' }}
               >
                 {t.label}
               </span>

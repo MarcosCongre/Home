@@ -39,6 +39,8 @@ On a real phone this duplicates the device status bar; on desktop the app stays 
 - T2 deploy: `6c95273` via `deploy/deploy.sh` (2026-10-20): `GET /` 200 serving `index-DPWPis6c.js`, `GET /api/tasks` 200. Visual check by user pending.
 - T3: inline. Root shell pads env(safe-area-inset-left/right); assignee rows in TaskDetail/TaskModal use flex-wrap with basis-20 min-w-0 buttons and truncated names. Also fixed pre-existing "NaN% completado" on Dashboard/Members when there are no tasks (division by zero; found during visual check). Checks: `tsc --noEmit` exit 0, `vite build` OK. Visual (headless Chrome on `vite preview`): 1280 px sidebar + 3 stat cards OK; 768 px sidebar, chips wrap; 360 px (iframe, headless clamps windows below ~500 px) bottom nav with 4 tabs, 3 stat cards fit. Same-origin probe: 360 -> scroll 360x780, md=false; 768 -> scroll 768x780, md=true (no horizontal overflow). Not covered: modals and populated lists (no local API data).
 - T3 RDD: medium, lens review-reliability approved and acknowledged (lineage `review-249263fc548e5c88`). Advisory: R3-001 modal overlays (sheet scroll, backdrop, toast above) not visually verified -> user checks on server; R3-002 `h-dvh` has no fallback for iOS Safari < 15.4 (optional `h-screen` fallback).
+- T3 deploy: `4e8684b` (2026-10-20), `GET /` 200 (`index-DbCq4P2-.js`), `/api/tasks` 200. User declined the `h-dvh` fallback.
+- [x] T4 — Text contrast (user feedback: text too light). Muted text `#A89880` (2.2-2.8:1) -> `#6E604E` (4.8-6.1:1 on #EDE4D4/#F6EFE3/#FFF, WCAG AA); dismiss `x` `#D8CEBC` -> `#6E604E`; inactive tab icons opacity 0.4 -> 0.65. Route: inline mechanical replace. Checks: `tsc --noEmit` exit 0, `vite build` OK.
 
 ## Next step
 
