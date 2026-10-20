@@ -34,7 +34,7 @@ On a real phone this duplicates the device status bar; on desktop the app stays 
 
 ## Progress / evidence
 
-- T1: done in `67310e7`. Checks: `tsc --noEmit` exit 0, `vite build` OK. Visual check at 360/1280 px pending (user).
+- T1: done in `67310e7`. Checks: `tsc --noEmit` exit 0, `vite build` OK. Visual check at 360/1280 px pending (user). RDD: medium, lens review-reliability approved and acknowledged (lineage `review-724a482ceb4a874a`); advisory R3-002 (error toast hidden under modal overlays) scheduled for T2. Deployed `8d2c073` with `deploy/deploy.sh` (2026-10-20): `GET /` 200 serving `index-ov46KEGQ.js` with `viewport-fit=cover`, `GET /api/tasks` 200.
 
 ## Next step
 
