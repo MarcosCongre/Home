@@ -59,4 +59,47 @@ final class TaskControllerTest extends TestCase
 
         $this->assertSame([], $response);
     }
+
+    public function testItReopensACompletedTaskAndAllowsCompletingItAgain(): void
+    {
+        $repository = new InMemoryTaskRepository();
+        $app = new App($repository);
+
+        $created = $app->handle([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/tasks',
+            'CONTENT_TYPE' => 'application/json',
+            'php://input' => '{"title":"Water plants","householdId":"house-42","userId":"user-77"}'
+        ]);
+        $taskId = $created['id'];
+
+        $app->handle([
+            'REQUEST_METHOD' => 'PATCH',
+            'PATH_INFO' => '/tasks/' . $taskId . '/complete',
+            'CONTENT_TYPE' => 'application/json',
+            'php://input' => '{"userId":"user-77"}'
+        ]);
+
+        $reopened = $app->handle([
+            'REQUEST_METHOD' => 'PATCH',
+            'PATH_INFO' => '/tasks/' . $taskId . '/reopen',
+            'CONTENT_TYPE' => 'application/json',
+            'php://input' => '{}'
+        ]);
+
+        $this->assertSame($taskId, $reopened['id']);
+        $this->assertSame('pending', $reopened['status']);
+        $this->assertNull($reopened['completedAt']);
+        $this->assertSame('Water plants', $reopened['title']);
+
+        $completedAgain = $app->handle([
+            'REQUEST_METHOD' => 'PATCH',
+            'PATH_INFO' => '/tasks/' . $taskId . '/complete',
+            'CONTENT_TYPE' => 'application/json',
+            'php://input' => '{"userId":"user-77"}'
+        ]);
+
+        $this->assertSame('completed', $completedAgain['status']);
+        $this->assertNotNull($completedAgain['completedAt']);
+    }
 }

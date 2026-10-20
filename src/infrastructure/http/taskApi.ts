@@ -17,6 +17,14 @@ export async function completeTask(taskId: number, userId: number): Promise<Task
   return mapTaskDto(payload)
 }
 
+export async function reopenTask(taskId: number): Promise<Task> {
+  const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}/reopen`, {
+    method: 'PATCH',
+  })
+
+  return mapTaskDto(payload)
+}
+
 export async function createTask(
   data: {
     title: string;

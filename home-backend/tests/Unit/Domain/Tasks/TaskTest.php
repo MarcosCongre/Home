@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Domain\Tasks;
 
 use App\Domain\Tasks\Task;
+use App\Domain\Tasks\TaskStateConflict;
 use App\Domain\Tasks\TaskStatus;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -73,5 +74,52 @@ final class TaskTest extends TestCase
         $this->assertSame('weekly', $task->recurrence());
         $this->assertSame('high', $task->priority());
         $this->assertSame(42, $task->assignedMemberId());
+    }
+
+    public function testItCanBeReopenedAfterBeingCompleted(): void
+    {
+        $task = Task::create(
+            id: 457,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+        $task->complete();
+
+        $task->reopen();
+
+        $this->assertSame(TaskStatus::PENDING, $task->status());
+        $this->assertNull($task->completedAt());
+    }
+
+    public function testItCannotReopenATaskThatIsNotCompleted(): void
+    {
+        $task = Task::create(
+            id: 458,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+
+        $this->expectException(TaskStateConflict::class);
+        $this->expectExceptionMessage('Task is not completed.');
+
+        $task->reopen();
+    }
+
+    public function testCompletingAnAlreadyCompletedTaskIsAStateConflict(): void
+    {
+        $task = Task::create(
+            id: 459,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+        $task->complete();
+
+        $this->expectException(TaskStateConflict::class);
+        $this->expectExceptionMessage('Task is already completed.');
+
+        $task->complete();
     }
 }
