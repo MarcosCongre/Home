@@ -41,7 +41,8 @@ On a real phone this duplicates the device status bar; on desktop the app stays 
 - T3 RDD: medium, lens review-reliability approved and acknowledged (lineage `review-249263fc548e5c88`). Advisory: R3-001 modal overlays (sheet scroll, backdrop, toast above) not visually verified -> user checks on server; R3-002 `h-dvh` has no fallback for iOS Safari < 15.4 (optional `h-screen` fallback).
 - T3 deploy: `4e8684b` (2026-10-20), `GET /` 200 (`index-DbCq4P2-.js`), `/api/tasks` 200. User declined the `h-dvh` fallback.
 - [x] T4 — Text contrast (user feedback: text too light). Muted text `#A89880` (2.2-2.8:1) -> `#6E604E` (4.8-6.1:1 on #EDE4D4/#F6EFE3/#FFF, WCAG AA); dismiss `x` `#D8CEBC` -> `#6E604E`; inactive tab icons opacity 0.4 -> 0.65. Route: inline mechanical replace. Checks: `tsc --noEmit` exit 0, `vite build` OK.
+- T4 deploy: `41a2fa7` (2026-10-20), `GET /` 200, served CSS contains `6E604E`, `/api/tasks` 200. RDD declined by user for this candidate.
 
 ## Next step
 
-T1 approved visually by the user (2026-10-20). T1-T3 done. Next: user decides deploy of T3 and PR/merge.
+Feature closed (2026-10-20). Delivery: single PR on user request (~480 authored lines, above the ~400 heuristic; user asked for one PR). Optional follow-ups: `h-dvh` fallback (declined), accent colors terra/olive below AA for small text, visual check of modals with real data.
