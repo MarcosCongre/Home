@@ -34,7 +34,7 @@ Requested by the user (2026-10-17/18): the home server becomes the always-on bac
 ## Tasks
 - [x] T1 — Install server packages (user runs sudo block). Route: inline. Evidence (2026-10-19): PHP 8.4.26 CLI with `pdo_mysql` and `mbstring`; Composer 2.8.8; `nginx` and `php8.4-fpm` installed and enabled but not started (started in T4 after config); only ports 22 and 3306 listening; 559 MB RAM available.
 - [x] T2 — Create app DB user on the server; confirm `home` is empty (user runs sudo block). Route: inline. Evidence (2026-10-19): `home` exists with 0 tables; `homeapp@localhost` created with a random password generated on the server (stored only in `~/homeapp/.env.db` and `~/.my.cnf`, both mode 600); grants verified: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, INDEX, ALTER, LOCK TABLES on `home`.*. A pasted GRANT line got truncated by the terminal; re-run as a shorter single line.
-- [ ] T3 — Dump local XAMPP `home` (MariaDB 10.4) and import on the server (11.8); verify row counts match. Route: inline.
+- [x] T3 — Dump local XAMPP `home` (MariaDB 10.4) and import on the server (11.8); verify row counts match. Route: inline. Evidence (2026-10-19): `mysqldump --single-transaction --no-tablespaces` (10.8 KB, 3 tables); copied via scp, imported as `homeapp`; row counts match local and server: members 5, tasks 25, alerts 16. Dump deleted on both sides. Note: local XAMPP MariaDB needed crash recovery on start (previous unclean shutdown); recovered without errors.
 - [ ] T4 — Deploy `main` to the server, `.env` outside repo, composer autoload, nginx + php-fpm site, LAN-only. Route: inline (server config, user runs sudo parts).
 - [ ] T5 — Smoke test API from the PC against the server. Route: inline.
 
@@ -53,4 +53,4 @@ Requested by the user (2026-10-17/18): the home server becomes the always-on bac
 - 2026-10-19: document created. Local XAMPP MariaDB is stopped (needs to be started for T3). Server DB needs credentials (no `~/.my.cnf`, `marcos`@localhost denied).
 
 ## Next step
-T3: start local XAMPP MariaDB, dump `home`, import on the server, compare row counts.
+T4: decide whether the frontend is served from the server, then deploy.
