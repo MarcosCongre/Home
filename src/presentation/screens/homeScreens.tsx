@@ -31,6 +31,7 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [filter, setFilter] = useState('All')
   const done = tasks.filter(t => t.done).length
+  const completionPct = tasks.length ? Math.round((done / tasks.length) * 100) : 0
   const visible = filter === 'All' ? tasks : tasks.filter(t => t.category === filter)
 
   return (
@@ -53,10 +54,10 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
         <div className="mt-3 h-1.5 rounded-full bg-[#EDE4D4]">
           <div
             className="h-full rounded-full bg-[#6B7C4E] transition-all"
-            style={{ width: `${Math.round((done / tasks.length) * 100)}%` }}
+            style={{ width: `${completionPct}%` }}
           />
         </div>
-        <p className="text-[11px] text-[#A89880] mt-1">{es.dashboard.completeThisWeek(Math.round((done / tasks.length) * 100))}</p>
+        <p className="text-[11px] text-[#A89880] mt-1">{es.dashboard.completeThisWeek(completionPct)}</p>
         {onAutoAssign && (
           <button
             onClick={() => void onAutoAssign()}
@@ -538,18 +539,18 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
 
         <div>
           <label className="text-[11px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.assignedTo}</label>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {users.map(u => (
               <button
                 key={u.id}
                 onClick={() => setAssignee(u.id)}
-                className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all border-2"
+                className="flex-1 basis-20 min-w-0 flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl transition-all border-2"
                 style={assignee === u.id
                   ? { borderColor: u.color, background: u.color + '15' }
                   : { borderColor: 'transparent', background: '#fff' }}
               >
                 <Avatar user={u} size={30} />
-                <span className="text-[11px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
+                <span className="max-w-full truncate text-[11px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
               </button>
             ))}
           </div>
@@ -737,7 +738,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-3xl font-display text-[#F6EFE3]">
-                    {Math.round((tasks.filter(t => t.done).length / tasks.length) * 100)}%
+                    {tasks.length ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0}%
                   </p>
                   <p className="text-xs text-[#A89880] mt-0.5">{es.members.weeklyCompletion}</p>
                 </div>

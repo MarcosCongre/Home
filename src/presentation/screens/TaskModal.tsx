@@ -96,18 +96,18 @@ export function TaskModal({
 
         <div className="mt-4">
             <label className="text-[11px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.assignedTo}</label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
             {users.map(u => (
                 <button
                 key={u.id}
                 onClick={() => setAssignee(u.id)}
-                className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all border-2"
+                className="flex-1 basis-20 min-w-0 flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl transition-all border-2"
                 style={assignee === u.id
                     ? { borderColor: u.color, background: u.color + '15' }
                     : { borderColor: 'transparent', background: '#fff' }}
                 >
                 <Avatar user={u} size={30} />
-                <span className="text-[11px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
+                <span className="max-w-full truncate text-[11px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
                 </button>
             ))}
             </div>

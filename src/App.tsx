@@ -55,7 +55,10 @@ export default function App() {
   }
 
   return (
-    <div className="h-dvh flex flex-col md:flex-row bg-[#EDE4D4] text-[#3D2E1E]">
+    <div
+      className="h-dvh flex flex-col md:flex-row bg-[#EDE4D4] text-[#3D2E1E]"
+      style={{ paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}
+    >
       {error && (
         <div
           className="fixed left-1/2 -translate-x-1/2 z-[60] max-w-[calc(100%-2rem)] rounded-2xl bg-[#3D2E1E] text-[#F6EFE3] pl-4 pr-1 py-0.5 text-xs font-medium shadow-md flex items-center gap-3"
