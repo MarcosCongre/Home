@@ -144,3 +144,8 @@
 *.stl                filter=lfs diff=lfs merge=lfs -text
 *.nc                 filter=lfs diff=lfs merge=lfs -text
 *.mat                filter=lfs diff=lfs merge=lfs -text
+
+# ---------------------------------------------------------------------------
+# Deploy files run on the Linux server: keep LF line endings
+# ---------------------------------------------------------------------------
+deploy/** text eol=lf
