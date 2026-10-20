@@ -10,6 +10,8 @@ use App\Application\Tasks\CreateTask\CreateTaskCommand;
 use App\Application\Tasks\CreateTask\CreateTaskHandler;
 use App\Application\Tasks\ListTasks\ListTasksHandler;
 use App\Application\Tasks\ListTasks\ListTasksQuery;
+use App\Application\Tasks\ReopenTask\ReopenTaskCommand;
+use App\Application\Tasks\ReopenTask\ReopenTaskHandler;
 use App\Application\Tasks\UpdateTask\UpdateTaskCommand;
 use App\Application\Tasks\UpdateTask\UpdateTaskHandler;
 use App\Application\Tasks\DeleteTask\DeleteTaskHandler;
@@ -76,6 +78,14 @@ final class TaskController
             taskId: $taskId,
             userId: $userId
         ));
+
+        return $this->serializeTask($task);
+    }
+
+    public function reopen(int $taskId): array
+    {
+        $handler = new ReopenTaskHandler($this->taskRepository);
+        $task = $handler->handle(new ReopenTaskCommand(taskId: $taskId));
 
         return $this->serializeTask($task);
     }

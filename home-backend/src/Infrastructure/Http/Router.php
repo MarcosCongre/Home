@@ -51,6 +51,11 @@ final class Router
             return $controller->complete($this->positiveId($matches[1]), (string) ($payload['userId'] ?? ''));
         }
 
+        if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/reopen$#', $path, $matches) === 1) {
+            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            return $controller->reopen($this->positiveId($matches[1]));
+        }
+
         if ($method === 'GET' && $path === '/tasks') {
             $controller = new TaskController($this->taskRepository, $this->alertRepository);
             $householdId = (string) ($request['householdId'] ?? '');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Domain\Alerts\AlertNotFoundException;
+use App\Domain\Tasks\TaskStateConflict;
 use App\Infrastructure\Config\AppTimezone;
 use App\Infrastructure\Http\RouteNotFoundException;
 use App\Infrastructure\Http\Router;
@@ -76,6 +77,9 @@ try {
 } catch (RouteNotFoundException|AlertNotFoundException $exception) {
     http_response_code(404);
     echo json_encode(['error' => 'Not found']);
+} catch (TaskStateConflict $exception) {
+    http_response_code(409);
+    echo json_encode(['error' => $exception->getMessage()]);
 } catch (InvalidArgumentException $exception) {
     http_response_code(400);
     echo json_encode(['error' => $exception->getMessage()]);

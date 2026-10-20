@@ -52,11 +52,21 @@ class Task
     public function complete(): void
     {
         if ($this->status === TaskStatus::COMPLETED) {
-            throw new \RuntimeException('Task is already completed.');
+            throw TaskStateConflict::alreadyCompleted();
         }
 
         $this->status = TaskStatus::COMPLETED;
         $this->completedAt = new DateTimeImmutable();
+    }
+
+    public function reopen(): void
+    {
+        if ($this->status !== TaskStatus::COMPLETED) {
+            throw TaskStateConflict::notCompleted();
+        }
+
+        $this->status = TaskStatus::PENDING;
+        $this->completedAt = null;
     }
 
     public function update(
