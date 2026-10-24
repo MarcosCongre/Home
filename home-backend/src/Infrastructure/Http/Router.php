@@ -32,7 +32,7 @@ final class Router
         }
 
         if ($method === 'POST' && $path === '/tasks') {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
             return $controller->create($this->decodeJson($this->body($request)));
         }
 
@@ -43,7 +43,7 @@ final class Router
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
             return $controller->update($this->positiveId($matches[1]), $this->decodeJson($this->body($request)));
         }
 

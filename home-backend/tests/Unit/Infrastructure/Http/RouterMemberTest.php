@@ -84,4 +84,40 @@ final class RouterMemberTest extends TestCase
         $this->assertSame([], $listed);
         $this->assertNull($taskRepository->findById($task['id'])?->assignedMemberId());
     }
+
+    public function testItRejectsCreatingOrUpdatingATaskForADeletedMember(): void
+    {
+        $taskRepository = new InMemoryTaskRepository();
+        $memberRepository = new InMemoryMemberRepository();
+        $router = new Router($taskRepository, $memberRepository);
+
+        $member = $router->dispatch([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/members',
+            'php://input' => json_encode(['name' => 'Archie', 'avatar' => 'A', 'color' => '#C4963A', 'householdId' => 'house-9']),
+        ]);
+        $task = $router->dispatch([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/tasks',
+            'php://input' => json_encode(['title' => 'Fold laundry', 'householdId' => 'house-9']),
+        ]);
+        $router->dispatch(['REQUEST_METHOD' => 'DELETE', 'PATH_INFO' => '/members/' . $member['id']]);
+
+        $requests = [
+            ['REQUEST_METHOD' => 'POST', 'PATH_INFO' => '/tasks', 'php://input' => json_encode(['title' => 'Iron', 'householdId' => 'house-9', 'assignedMemberId' => $member['id']])],
+            ['REQUEST_METHOD' => 'PATCH', 'PATH_INFO' => '/tasks/' . $task['id'], 'php://input' => json_encode(['title' => 'Fold laundry', 'assignedMemberId' => $member['id']])],
+        ];
+        $rejected = 0;
+        foreach ($requests as $request) {
+            try {
+                $router->dispatch($request);
+            } catch (\InvalidArgumentException) {
+                $rejected++;
+            }
+        }
+
+        $this->assertSame(2, $rejected);
+        $this->assertCount(1, $taskRepository->findByHouseholdId('house-9'));
+        $this->assertNull($taskRepository->findById($task['id'])?->assignedMemberId());
+    }
 }
