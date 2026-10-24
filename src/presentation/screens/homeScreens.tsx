@@ -205,7 +205,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
       </div>
 
 
-      <div className="flex-1 overflow-y-auto px-5 py-3 md:px-8 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:content-start xl:grid-cols-3">
+      <div className="flex-1 overflow-y-auto px-5 py-3 md:px-8 flex flex-col gap-2 md:grid md:grid-cols-2 md:auto-rows-max md:gap-3 md:content-start xl:grid-cols-3">
         {dayTasks.length === 0 && (
           <div className="col-span-full text-center text-[#6E604E] text-sm pt-10">{activeDay === 'All' ? es.calendar.noTasks : es.calendar.noTasksFor(dayLabel(activeDay))}</div>
         )}
@@ -216,7 +216,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
             <button
               key={task.id}
               onClick={() => setTaskModal(task)}
-              className="w-full text-left bg-white rounded-2xl overflow-hidden shadow-sm flex active:scale-[0.99] transition-transform"
+              className="w-full shrink-0 text-left bg-white rounded-2xl overflow-hidden shadow-sm flex active:scale-[0.99] transition-transform"
             >
               <div className="w-1 self-stretch" style={{ background: catColor }} />
               <div className="flex-1 px-4 py-3">
