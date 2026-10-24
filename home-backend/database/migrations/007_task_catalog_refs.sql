@@ -1,7 +1,9 @@
 -- Tasks reference the per-household catalogs (006) by id instead of free strings.
--- Written for MariaDB 11.8. Safe to re-run: columns, indexes and keys use IF NOT EXISTS,
--- households that already have catalog rows are never reseeded, and only tasks whose
--- reference is still NULL are backfilled.
+-- Written for MariaDB 11.8. Run it once, before deploying the backend that reads the ids.
+-- Columns, indexes and keys use IF NOT EXISTS and households that already have catalog
+-- rows are never reseeded, so an interrupted run can be repeated. Do NOT re-run it after
+-- the new backend is live: the legacy strings stay frozen, so a re-run would point tasks
+-- whose reference was cleared back at their old string and recreate deleted entries.
 
 -- a. Close the schema drift: these columns exist in production (added by hand) but no
 --    earlier migration creates them. Definitions match production exactly.
