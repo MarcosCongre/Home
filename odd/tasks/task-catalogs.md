@@ -36,6 +36,12 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
   - Route: delegated (writer). Trigger: non-trivial policy change plus two test files.
   - Commit: `5daed26` (+134/−61, mostly tests).
   - Summary: `TaskAssignmentPolicy::cycleEnd()` is replaced by `rotatableFrom(Task, $now)`: null while the current assignment is not completed (`completedAt` null, or earlier than `lastAssignedAt`), otherwise the start of the calendar day after `completedAt` in `$now`'s timezone (the app timezone in production, since `now` comes from `new DateTimeImmutable()` under `date_default_timezone_set`). A recurring task is locked while `rotatableFrom` is null or still in the future; one-off tasks are unchanged (always locked to an assignee, completed ones skipped). The intervalDays map stays for the 7/N weight. Non-repeatable recurring tasks with status `completed` follow the same rule (they were already eligible regardless of status). Behavior changes: an assigned recurring task with no `lastAssignedAt` and no completion (legacy rows) now keeps its assignee instead of rotating; a completed one rotates from the next day. `AutoAssignTasksHandlerTest` now proves the interval through load balancing (weight) instead of the lock.
+  - Review (T2 + T2b, base `cfdbe60`): assessed `high`; consent granted; 4-lens review approved and acknowledged (`review-940212cec4fa218a`). Reviewed boundary is now `c376c80`.
+  - Advisory follow-ups (non-blocking):
+    - **Deploy together:** the backend now ignores the legacy `category`/`recurrence` strings, so deploying it before T4 would save new tasks as one-off and lose category edits. Ship backend and frontend together after T4.
+    - **Migration 007 unproved:** never run against MariaDB. Dry-run it on a copy of production before deploying.
+    - **Re-run claim:** the 007 header said "safe to re-run"; fixed to "run once, do not re-run after the new backend is live".
+    - **Completed non-repeatable recurring tasks:** they rotate once, then stay locked to the new assignee, because their status stays completed and no new `completedAt` arrives. Open product question.
 - [ ] T3 — Frontend Settings tab: API clients, hooks, and CRUD UI for categories and recurrence types.
 - [ ] T4 — Frontend tasks use catalogs: TaskModal, Dashboard filter/badges and TaskDetail read the household catalogs instead of hard-coded lists.
 
@@ -76,4 +82,4 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Next step
 
-- review T2 + T2b (base `cfdbe60`), then T3.
+- T3. Before deploy: dry-run 006 + 007 on a production copy; deploy backend and frontend together after T4.
