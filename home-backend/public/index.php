@@ -5,12 +5,15 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 use App\Domain\Alerts\AlertNotFoundException;
+use App\Domain\Tasks\Catalog\CatalogEntryNotFoundException;
 use App\Domain\Tasks\TaskStateConflict;
 use App\Infrastructure\Config\AppTimezone;
 use App\Infrastructure\Http\RouteNotFoundException;
 use App\Infrastructure\Http\Router;
 use App\Infrastructure\Persistence\PdoAlertRepository;
+use App\Infrastructure\Persistence\PdoCategoryRepository;
 use App\Infrastructure\Persistence\PdoMemberRepository;
+use App\Infrastructure\Persistence\PdoRecurrenceTypeRepository;
 use App\Infrastructure\Persistence\PdoTaskRepository;
 use App\Infrastructure\Persistence\PdoTransactionRunner;
 
@@ -65,7 +68,9 @@ try {
         new PdoTaskRepository($pdo),
         new PdoMemberRepository($pdo),
         new PdoAlertRepository($pdo),
-        new PdoTransactionRunner($pdo)
+        new PdoTransactionRunner($pdo),
+        new PdoCategoryRepository($pdo),
+        new PdoRecurrenceTypeRepository($pdo)
     );
     $request = $_SERVER;
     $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
@@ -76,7 +81,7 @@ try {
     $request['PATH_INFO'] = $requestPath;
     $request['rawBody'] = file_get_contents('php://input') ?: '{}';
     echo json_encode($router->dispatch($request), JSON_THROW_ON_ERROR);
-} catch (RouteNotFoundException|AlertNotFoundException $exception) {
+} catch (RouteNotFoundException|AlertNotFoundException|CatalogEntryNotFoundException $exception) {
     http_response_code(404);
     echo json_encode(['error' => 'Not found']);
 } catch (TaskStateConflict $exception) {

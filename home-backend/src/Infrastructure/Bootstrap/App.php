@@ -6,6 +6,8 @@ namespace App\Infrastructure\Bootstrap;
 
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\MemberRepositoryInterface;
+use App\Domain\Tasks\Catalog\CategoryRepositoryInterface;
+use App\Domain\Tasks\Catalog\RecurrenceTypeRepositoryInterface;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use App\Infrastructure\Http\Router;
 
@@ -14,7 +16,9 @@ final class App
     public function __construct(
         private TaskRepositoryInterface $taskRepository,
         private ?MemberRepositoryInterface $memberRepository = null,
-        private ?AlertRepositoryInterface $alertRepository = null
+        private ?AlertRepositoryInterface $alertRepository = null,
+        private ?CategoryRepositoryInterface $categoryRepository = null,
+        private ?RecurrenceTypeRepositoryInterface $recurrenceTypeRepository = null
     ) {
     }
 
@@ -24,6 +28,12 @@ final class App
      */
     public function handle(array $request): array
     {
-        return (new Router($this->taskRepository, $this->memberRepository, $this->alertRepository))->dispatch($request);
+        return (new Router(
+            $this->taskRepository,
+            $this->memberRepository,
+            $this->alertRepository,
+            categoryRepository: $this->categoryRepository,
+            recurrenceTypeRepository: $this->recurrenceTypeRepository
+        ))->dispatch($request);
     }
 }

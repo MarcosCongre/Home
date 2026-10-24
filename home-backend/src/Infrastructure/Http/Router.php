@@ -7,6 +7,8 @@ namespace App\Infrastructure\Http;
 use App\Application\Shared\TransactionRunner;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\MemberRepositoryInterface;
+use App\Domain\Tasks\Catalog\CategoryRepositoryInterface;
+use App\Domain\Tasks\Catalog\RecurrenceTypeRepositoryInterface;
 use App\Domain\Tasks\TaskRepositoryInterface;
 
 final class Router
@@ -15,7 +17,9 @@ final class Router
         private TaskRepositoryInterface $taskRepository,
         private ?MemberRepositoryInterface $memberRepository = null,
         private ?AlertRepositoryInterface $alertRepository = null,
-        private ?TransactionRunner $transactionRunner = null
+        private ?TransactionRunner $transactionRunner = null,
+        private ?CategoryRepositoryInterface $categoryRepository = null,
+        private ?RecurrenceTypeRepositoryInterface $recurrenceTypeRepository = null
     ) {
     }
 
@@ -137,7 +141,79 @@ final class Router
             return $controller->list($householdId);
         }
 
+        if ($this->categoryRepository !== null && $method === 'GET' && $path === '/categories') {
+            return (new CategoryController($this->categoryRepository, $this->transactionRunner))->list($this->queryParam($request, 'householdId'));
+        }
+
+        if ($this->categoryRepository !== null && $method === 'POST' && $path === '/categories') {
+            return (new CategoryController($this->categoryRepository))->create($this->decodeJson($this->body($request)));
+        }
+
+        if ($this->categoryRepository !== null && $method === 'PATCH' && preg_match('#^/categories/([^/]+)$#', $path, $matches) === 1) {
+            $id = $this->positiveId($matches[1]);
+            $payload = $this->decodeJson($this->body($request));
+            return (new CategoryController($this->categoryRepository))->update($id, $this->requiredHouseholdId($request, $payload), $payload);
+        }
+
+        if ($this->categoryRepository !== null && $method === 'DELETE' && preg_match('#^/categories/([^/]+)$#', $path, $matches) === 1) {
+            $id = $this->positiveId($matches[1]);
+            (new CategoryController($this->categoryRepository))->delete($id, $this->requiredHouseholdId($request, $this->decodeJson($this->body($request))));
+            return ['deleted' => true, 'id' => $id];
+        }
+
+        if ($this->recurrenceTypeRepository !== null && $method === 'GET' && $path === '/recurrence-types') {
+            return (new RecurrenceTypeController($this->recurrenceTypeRepository, $this->transactionRunner))->list($this->queryParam($request, 'householdId'));
+        }
+
+        if ($this->recurrenceTypeRepository !== null && $method === 'POST' && $path === '/recurrence-types') {
+            return (new RecurrenceTypeController($this->recurrenceTypeRepository))->create($this->decodeJson($this->body($request)));
+        }
+
+        if ($this->recurrenceTypeRepository !== null && $method === 'PATCH' && preg_match('#^/recurrence-types/([^/]+)$#', $path, $matches) === 1) {
+            $id = $this->positiveId($matches[1]);
+            $payload = $this->decodeJson($this->body($request));
+            return (new RecurrenceTypeController($this->recurrenceTypeRepository))->update($id, $this->requiredHouseholdId($request, $payload), $payload);
+        }
+
+        if ($this->recurrenceTypeRepository !== null && $method === 'DELETE' && preg_match('#^/recurrence-types/([^/]+)$#', $path, $matches) === 1) {
+            $id = $this->positiveId($matches[1]);
+            (new RecurrenceTypeController($this->recurrenceTypeRepository))->delete($id, $this->requiredHouseholdId($request, $this->decodeJson($this->body($request))));
+            return ['deleted' => true, 'id' => $id];
+        }
+
         throw RouteNotFoundException::for($method, $path);
+    }
+
+    /** @param array<string, mixed> $request */
+    private function queryParam(array $request, string $name): string
+    {
+        $value = (string) ($request[$name] ?? '');
+        if ($value === '' && isset($request['QUERY_STRING'])) {
+            parse_str((string) $request['QUERY_STRING'], $queryParams);
+            $value = (string) ($queryParams[$name] ?? '');
+        }
+
+        return $value;
+    }
+
+    /**
+     * Catalog writes are scoped to a household: taken from the query string, else from the JSON body.
+     *
+     * @param array<string, mixed> $request
+     * @param array<string, mixed> $payload
+     */
+    private function requiredHouseholdId(array $request, array $payload): string
+    {
+        $householdId = $this->queryParam($request, 'householdId');
+        if ($householdId === '') {
+            $householdId = trim((string) ($payload['householdId'] ?? ''));
+        }
+
+        if ($householdId === '') {
+            throw new \InvalidArgumentException('householdId is required.');
+        }
+
+        return $householdId;
     }
 
     /**
