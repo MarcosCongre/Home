@@ -66,4 +66,4 @@ User request (2026-10-19): random assignment that respects task characteristics 
 - 2026-10-20: T2 done (frontend auto-assign button; build + typecheck green). 103 authored changed lines in `src` (+97/-6).
 
 ## Next step
-User tries "Repartir tareas" in the UI. After the `fix/task-reopen` PR merges: rebase on `main`, open PR1 (backend) and PR2 (frontend) per `stacked-to-main` (user decision).
+Feature closed (2026-10-20). Delivery: PR #5 (`feat/task-auto-assign-backend`, T1+T1b) -> `main`; PR #6 (`feat/task-auto-assign`, T2+docs) stacked on #5. No rebase was needed: `fix/task-reopen` merged as PR #4. Merge #5 first, then retarget #6 to `main` if GitHub does not. User confirmed daily tasks keep the 7-day cycle (no daily rotation, no cron). Pending outside this feature: user tries the button in the UI (first run reassigns every recurring task, since all `lastAssignedAt` are null).

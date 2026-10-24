@@ -31,12 +31,13 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [filter, setFilter] = useState('All')
   const done = tasks.filter(t => t.done).length
+  const completionPct = tasks.length ? Math.round((done / tasks.length) * 100) : 0
   const visible = filter === 'All' ? tasks : tasks.filter(t => t.category === filter)
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
-        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest mb-0.5">{es.dashboard.date}</p>
+      <div className="px-5 pt-6 pb-4 md:px-8 md:pt-8 bg-[#F6EFE3]">
+        <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest mb-0.5">{es.dashboard.date}</p>
         <h1 className="font-display text-[28px] text-[#3D2E1E] leading-tight">{es.dashboard.greeting}<br /><em>Maya</em> 🌤</h1>
         <div className="flex gap-3 mt-4">
           {[
@@ -46,71 +47,75 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
           ].map(s => (
             <div key={s.label} className="flex-1 bg-white rounded-2xl px-3 py-2.5 text-center shadow-sm">
               <p className="text-xl font-semibold" style={{ color: s.color }}>{s.val}</p>
-              <p className="text-[10px] text-[#A89880] font-medium">{s.label}</p>
+              <p className="text-[11px] text-[#6E604E] font-medium">{s.label}</p>
             </div>
           ))}
         </div>
         <div className="mt-3 h-1.5 rounded-full bg-[#EDE4D4]">
           <div
             className="h-full rounded-full bg-[#6B7C4E] transition-all"
-            style={{ width: `${Math.round((done / tasks.length) * 100)}%` }}
+            style={{ width: `${completionPct}%` }}
           />
         </div>
-        <p className="text-[10px] text-[#A89880] mt-1">{es.dashboard.completeThisWeek(Math.round((done / tasks.length) * 100))}</p>
+        <p className="text-[11px] text-[#6E604E] mt-1">{es.dashboard.completeThisWeek(completionPct)}</p>
         {onAutoAssign && (
           <button
             onClick={() => void onAutoAssign()}
             disabled={isAutoAssigning}
             aria-busy={isAutoAssigning}
-            className="mt-3 w-full py-2 rounded-xl bg-[#C4623A] text-white text-xs font-semibold shadow-sm transition-opacity disabled:opacity-60"
+            className="mt-3 w-full min-h-11 py-2 rounded-xl bg-[#C4623A] text-white text-sm font-semibold md:w-auto md:px-8 shadow-sm transition-opacity disabled:opacity-60"
           >
             {isAutoAssigning ? es.dashboard.autoAssigning : es.dashboard.autoAssign}
           </button>
         )}
       </div>
 
-      <div className="flex gap-2 px-5 py-3 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
+      <div className="flex gap-2 px-5 py-3 md:px-8 md:flex-wrap overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
         {CATEGORIES.slice(0, 7).map(cat => (
           <button
             key={cat}
             onClick={() => setFilter(cat)}
-            className="shrink-0 text-[11px] font-medium px-3 py-1.5 rounded-full transition-all"
+            className="shrink-0 min-h-11 text-xs font-medium px-4 py-1.5 rounded-full transition-all"
             style={filter === cat
               ? { background: '#3D2E1E', color: '#F6EFE3' }
-              : { background: '#EDE4D4', color: '#A89880' }}
+              : { background: '#EDE4D4', color: '#6E604E' }}
           >
             {categoryLabel(cat)}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-2">
+      <div className="flex-1 overflow-y-auto px-5 pb-4 md:px-8 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:content-start xl:grid-cols-3">
         {visible.map(task => {
           const user = userOf(task.assignee)
           const catColor = categoryColor[task.category] ?? '#888'
           return (
             <div
               key={task.id}
-              className="bg-white rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm active:scale-[0.99] transition-transform"
+              className="bg-white rounded-2xl pl-2 pr-4 py-3 flex items-center gap-2 shadow-sm active:scale-[0.99] transition-transform"
             >
               <button
                 onClick={() => void onToggleComplete(task.id, task.assignee || 0)}
-                className="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
-                style={task.done
-                  ? { background: '#6B7C4E', borderColor: '#6B7C4E' }
-                  : { borderColor: '#D8CEBC' }}
+                className="shrink-0 w-11 h-11 flex items-center justify-center"
               >
-                {task.done && <span className="text-white text-xs">✓</span>}
+                <span
+                  className="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all"
+                  style={task.done
+                    ? { background: '#6B7C4E', borderColor: '#6B7C4E' }
+                    : { borderColor: '#D8CEBC' }}
+                >
+                  {task.done && <span className="text-white text-xs">✓</span>}
+                </span>
               </button>
-              <button className="flex-1 text-left" onClick={() => onSelect(task.id)}>
-                <p className={`text-sm font-medium leading-snug ${task.done ? 'line-through text-[#A89880]' : 'text-[#3D2E1E]'}`}>
+              <button className="flex-1 min-w-0 text-left" onClick={() => onSelect(task.id)}>
+                <p className={`text-sm font-medium leading-snug ${task.done ? 'line-through text-[#6E604E]' : 'text-[#3D2E1E]'}`}>
                   {task.title}
                 </p>
-                <div className="flex items-center gap-1.5 mt-1">
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <Badge label={categoryLabel(task.category)} color={catColor} />
-                  <Badge label={recurrenceLabel(task.recurrence)} color="#A89880" />
+                  <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
                   {task.time && task.time !== '—' && (
-                    <span className="text-[10px] text-[#A89880]">· {task.time}</span>
+                    <span className="text-[11px] text-[#6E604E]">· {task.time}</span>
                   )}
                 </div>
               </button>
@@ -141,42 +146,48 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
+      <div className="px-5 pt-6 pb-4 md:px-8 md:pt-8 bg-[#F6EFE3]">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{es.calendar.weekOf}</p>
+            <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest">{es.calendar.weekOf}</p>
             <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">{es.calendar.title}</h2>
           </div>
           <button
             onClick={() => setTaskModal('add')}
             aria-label={es.calendar.addTask}
             title={es.calendar.addTask}
-            className="w-9 h-9 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
+            className="w-11 h-11 shrink-0 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
           >
             +
           </button>
         </div>
 
-        <div className="flex gap-1.5 mt-4">
+        <div
+          className="flex gap-1.5 mt-4 -mx-5 px-5 overflow-x-auto md:mx-0 md:px-0 md:overflow-visible"
+          style={{ scrollbarWidth: 'none' }}
+        >
           {['All', ...DAYS].map(d => (
             <button
               key={d}
               onClick={() => setActiveDay(d)}
-              className="flex-1 py-2 rounded-xl text-[11px] font-semibold transition-all"
+              className="shrink-0 min-w-11 min-h-11 px-3 md:flex-1 md:px-0 py-2 rounded-xl text-xs font-semibold transition-all"
               style={activeDay === d
                 ? { background: '#C4623A', color: '#fff' }
-                : { background: '#EDE4D4', color: '#A89880' }}
+                : { background: '#EDE4D4', color: '#6E604E' }}
             >
               {d === 'All' ? es.common.allDays : dayLabel(d)}
             </button>
           ))}
         </div>
 
-        <div className="flex gap-2 mt-3">
+        <div
+          className="flex gap-2 mt-3 -mx-5 px-5 overflow-x-auto md:mx-0 md:px-0 md:flex-wrap md:overflow-visible"
+          style={{ scrollbarWidth: 'none' }}
+        >
           <button
             onClick={() => setFilterUser(null)}
-            className="text-[11px] font-medium px-3 py-1 rounded-full transition-all"
-            style={filterUser === null ? { background: '#3D2E1E', color: '#fff' } : { background: '#EDE4D4', color: '#A89880' }}
+            className="shrink-0 min-h-11 text-xs font-medium px-4 py-1 rounded-full transition-all"
+            style={filterUser === null ? { background: '#3D2E1E', color: '#fff' } : { background: '#EDE4D4', color: '#6E604E' }}
           >
             {es.common.all}
           </button>
@@ -184,7 +195,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
             <button
               key={u.id}
               onClick={() => setFilterUser(filterUser === u.id ? null : u.id)}
-              className="flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full transition-all"
+              className="shrink-0 min-h-11 flex items-center gap-1.5 text-xs font-medium px-4 py-1 rounded-full transition-all"
               style={filterUser === u.id ? { background: u.color, color: '#fff' } : { background: '#EDE4D4', color: '#888' }}
             >
               <span>{u.name}</span>
@@ -194,9 +205,9 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
       </div>
 
 
-      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
+      <div className="flex-1 overflow-y-auto px-5 py-3 md:px-8 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:content-start xl:grid-cols-3">
         {dayTasks.length === 0 && (
-          <div className="text-center text-[#A89880] text-sm pt-10">{activeDay === 'All' ? es.calendar.noTasks : es.calendar.noTasksFor(dayLabel(activeDay))}</div>
+          <div className="col-span-full text-center text-[#6E604E] text-sm pt-10">{activeDay === 'All' ? es.calendar.noTasks : es.calendar.noTasksFor(dayLabel(activeDay))}</div>
         )}
         {dayTasks.map(task => {
           const user = userOf(task.assignee)
@@ -210,17 +221,17 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
               <div className="w-1 self-stretch" style={{ background: catColor }} />
               <div className="flex-1 px-4 py-3">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className={`text-sm font-medium ${task.done ? 'line-through text-[#A89880]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
-                    <div className="flex gap-1.5 mt-1">
+                  <div className="min-w-0">
+                    <p className={`text-sm font-medium ${task.done ? 'line-through text-[#6E604E]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
                       <Badge label={categoryLabel(task.category)} color={catColor} />
-                      <Badge label={recurrenceLabel(task.recurrence)} color="#A89880" />
+                      <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 ml-3">
                     {user && <Avatar user={user} size={24} />}
                     {task.time && task.time !== '—' && (
-                      <span className="text-[10px] text-[#A89880] font-medium">{task.time}</span>
+                      <span className="text-[11px] text-[#6E604E] font-medium">{task.time}</span>
                     )}
                   </div>
                 </div>
@@ -266,14 +277,14 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
-        <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{es.alerts.today}</p>
+      <div className="px-5 pt-6 pb-4 md:px-8 md:pt-8 bg-[#F6EFE3]">
+        <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest">{es.alerts.today}</p>
         <div className="flex items-center justify-between mt-0.5">
           <h2 className="font-display text-2xl text-[#3D2E1E]">{es.alerts.title}</h2>
           {visible.length > 0 && (
             <button
               onClick={() => void onDismissAll()}
-              className="text-[11px] text-[#A89880] font-medium"
+              className="min-h-11 px-3 -mr-3 text-xs text-[#6E604E] font-medium"
             >
               {es.alerts.clearAll}
             </button>
@@ -281,11 +292,11 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-3 space-y-4">
+      <div className="flex-1 overflow-y-auto px-5 py-3 md:px-8 space-y-4">
         {urgent.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#C4623A] mb-2">{es.alerts.needsAttention}</p>
-            <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#C4623A] mb-2">{es.alerts.needsAttention}</p>
+            <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
               {urgent.map(n => {
                 const user = n.user ? userByInitial(n.user) : null
                 return (
@@ -295,11 +306,11 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-semibold text-[#3D2E1E]">{n.title}</p>
-                          <button onClick={() => void onDismiss(n.id)} aria-label={es.common.dismiss} title={es.common.dismiss} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
+                          <button onClick={() => void onDismiss(n.id)} aria-label={es.common.dismiss} title={es.common.dismiss} className="w-11 h-11 -my-3 -mr-3 ml-1 flex items-center justify-center text-[#6E604E] text-xl leading-none shrink-0">×</button>
                         </div>
-                        <p className="text-[12px] text-[#A89880] mt-0.5 leading-relaxed">{n.body}</p>
+                        <p className="text-[13px] text-[#6E604E] mt-0.5 leading-relaxed">{n.body}</p>
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="text-[10px] text-[#C4623A] font-medium">{n.time}</span>
+                          <span className="text-[11px] text-[#C4623A] font-medium">{n.time}</span>
                           {user && <Avatar user={user} size={18} />}
                         </div>
                       </div>
@@ -313,8 +324,8 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
 
         {rest.length > 0 && (
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">{es.alerts.earlier}</p>
-            <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] mb-2">{es.alerts.earlier}</p>
+            <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
               {rest.map(n => {
                 const user = n.user ? userByInitial(n.user) : null
                 return (
@@ -324,11 +335,11 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-[#3D2E1E]">{n.title}</p>
-                          <button onClick={() => void onDismiss(n.id)} aria-label={es.common.dismiss} title={es.common.dismiss} className="text-[#D8CEBC] text-base leading-none ml-2 shrink-0">×</button>
+                          <button onClick={() => void onDismiss(n.id)} aria-label={es.common.dismiss} title={es.common.dismiss} className="w-11 h-11 -my-3 -mr-3 ml-1 flex items-center justify-center text-[#6E604E] text-xl leading-none shrink-0">×</button>
                         </div>
-                        <p className="text-[12px] text-[#A89880] mt-0.5 leading-relaxed">{n.body}</p>
+                        <p className="text-[13px] text-[#6E604E] mt-0.5 leading-relaxed">{n.body}</p>
                         <div className="flex items-center gap-2 mt-1.5">
-                          <span className="text-[10px] text-[#A89880]">{n.time}</span>
+                          <span className="text-[11px] text-[#6E604E]">{n.time}</span>
                           {user && <Avatar user={user} size={16} />}
                         </div>
                       </div>
@@ -343,7 +354,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
         {visible.length === 0 && (
           <div className="text-center pt-16">
             <p className="text-4xl mb-3">🌿</p>
-            <p className="text-sm font-medium text-[#A89880]">{es.alerts.allCaughtUp}</p>
+            <p className="text-sm font-medium text-[#6E604E]">{es.alerts.allCaughtUp}</p>
           </div>
         )}
       </div>
@@ -372,15 +383,15 @@ export function MemberModal({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-end"
+      className="fixed inset-0 z-50 flex items-end md:items-center md:justify-center md:p-6"
       style={{ background: 'rgba(61,46,30,0.45)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="w-full bg-[#F6EFE3] rounded-t-3xl px-5 pt-5 pb-8"
+        className="w-full max-h-[90dvh] overflow-y-auto bg-[#F6EFE3] rounded-t-3xl md:max-w-lg md:rounded-3xl px-5 pt-5 pb-[calc(env(safe-area-inset-bottom)+2rem)] md:pb-6"
         onClick={e => e.stopPropagation()}
       >
-        <div className="w-10 h-1 rounded-full bg-[#D8CEBC] mx-auto mb-5" />
+        <div className="w-10 h-1 rounded-full bg-[#D8CEBC] mx-auto mb-5 md:hidden" />
         <h3 className="font-display text-xl text-[#3D2E1E] mb-4">
           {initial ? es.members.editMember : es.members.addMember}
         </h3>
@@ -394,7 +405,7 @@ export function MemberModal({
           </span>
         </div>
 
-        <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.members.name}</label>
+        <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.members.name}</label>
         <input
           value={name}
           onChange={e => setName(e.target.value)}
@@ -403,7 +414,7 @@ export function MemberModal({
           autoFocus
         />
 
-        <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-2">{es.members.color}</label>
+        <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-2">{es.members.color}</label>
         <div className="grid grid-cols-6 gap-2 mb-5">
           {PALETTE.map(c => (
             <button
@@ -423,7 +434,7 @@ export function MemberModal({
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#A89880] text-sm font-semibold"
+            className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#6E604E] text-sm font-semibold"
           >
             {es.common.cancel}
           </button>
@@ -449,12 +460,12 @@ export function ConfirmDelete({ user, taskCount, onConfirm, onClose }: {
 }) {
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center px-6"
+      className="fixed inset-0 z-50 flex items-center justify-center px-6"
       style={{ background: 'rgba(61,46,30,0.45)', backdropFilter: 'blur(4px)' }}
       onClick={onClose}
     >
       <div
-        className="w-full bg-[#F6EFE3] rounded-3xl px-5 py-6"
+        className="w-full max-w-sm bg-[#F6EFE3] rounded-3xl px-5 py-6"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-center mb-3">
@@ -462,13 +473,13 @@ export function ConfirmDelete({ user, taskCount, onConfirm, onClose }: {
         </div>
         <h3 className="font-display text-xl text-[#3D2E1E] text-center mb-1">{es.members.removeTitle(user.name)}</h3>
         {taskCount > 0 && (
-          <p className="text-xs text-[#A89880] text-center mb-4">
+          <p className="text-xs text-[#6E604E] text-center mb-4">
             {es.members.unassignWarning(taskCount)}
           </p>
         )}
         {taskCount === 0 && <div className="mb-4" />}
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#A89880] text-sm font-semibold">
+          <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#6E604E] text-sm font-semibold">
             {es.common.cancel}
           </button>
           <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl bg-[#B53A3A] text-white text-sm font-semibold">
@@ -502,8 +513,8 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
-        <button onClick={onBack} className="flex items-center gap-1 text-[#A89880] text-sm mb-3">
+      <div className="px-5 pt-6 pb-4 md:px-8 md:pt-8 bg-[#F6EFE3]">
+        <button onClick={onBack} className="flex items-center gap-1 min-h-11 pr-3 -mt-2 mb-1 text-[#6E604E] text-sm">
           <span>←</span> <span>{es.common.back}</span>
         </button>
         <div className="flex items-center gap-2">
@@ -511,14 +522,14 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
             className="w-2.5 h-2.5 rounded-full"
             style={{ background: categoryColor[task.category] ?? '#888' }}
           />
-          <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{categoryLabel(task.category)}</p>
+          <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest">{categoryLabel(task.category)}</p>
         </div>
         <h2 className="font-display text-2xl text-[#3D2E1E] mt-1 leading-snug">{task.title}</h2>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+      <div className="flex-1 overflow-y-auto px-5 py-4 md:px-8 space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-5 md:content-start">
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.taskName}</label>
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.taskName}</label>
           <input
             value={title}
             onChange={e => setTitle(e.target.value)}
@@ -527,35 +538,35 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.assignedTo}</label>
-          <div className="flex gap-2">
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.assignedTo}</label>
+          <div className="flex flex-wrap gap-2">
             {users.map(u => (
               <button
                 key={u.id}
                 onClick={() => setAssignee(u.id)}
-                className="flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl transition-all border-2"
+                className="flex-1 basis-20 min-w-0 flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl transition-all border-2"
                 style={assignee === u.id
                   ? { borderColor: u.color, background: u.color + '15' }
                   : { borderColor: 'transparent', background: '#fff' }}
               >
                 <Avatar user={u} size={30} />
-                <span className="text-[10px] font-medium" style={{ color: assignee === u.id ? u.color : '#A89880' }}>{u.name}</span>
+                <span className="max-w-full truncate text-[11px] font-medium" style={{ color: assignee === u.id ? u.color : '#6E604E' }}>{u.name}</span>
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.recurrence}</label>
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.recurrence}</label>
           <div className="grid grid-cols-3 gap-2">
             {RECURRENCES.map(r => (
               <button
                 key={r}
                 onClick={() => setRecurrence(r)}
-                className="py-2 rounded-xl text-xs font-medium transition-all"
+                className="min-h-11 py-2 rounded-xl text-xs font-medium transition-all"
                 style={recurrence === r
                   ? { background: '#3D2E1E', color: '#F6EFE3' }
-                  : { background: '#fff', color: '#A89880' }}
+                  : { background: '#fff', color: '#6E604E' }}
               >
                 {recurrenceLabel(r)}
               </button>
@@ -564,16 +575,16 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         </div>
 
         <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.fields.priority}</label>
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.priority}</label>
           <div className="flex gap-2">
             {(['low', 'med', 'high'] as const).map(p => (
               <button
                 key={p}
                 onClick={() => setPriority(p)}
-                className="flex-1 py-2 rounded-xl text-xs font-semibold transition-all"
+                className="flex-1 min-h-11 py-2 rounded-xl text-xs font-semibold transition-all"
                 style={priority === p
                   ? { background: priorityColors[p], color: '#fff' }
-                  : { background: '#fff', color: '#A89880' }}
+                  : { background: '#fff', color: '#6E604E' }}
               >
                 {priorityLabel(p)}
               </button>
@@ -581,11 +592,11 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
           </div>
         </div>
 
-        <div>
-          <label className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] block mb-1.5">{es.taskDetail.completionHistory}</label>
+        <div className="md:col-span-2">
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.taskDetail.completionHistory}</label>
           <div className="bg-white rounded-xl divide-y divide-[#F6EFE3]">
             {task.history.length === 0 && (
-              <p className="text-xs text-[#A89880] px-4 py-3">{es.taskDetail.noHistory}</p>
+              <p className="text-xs text-[#6E604E] px-4 py-3">{es.taskDetail.noHistory}</p>
             )}
             {task.history.map((h, i) => {
               const u = users.find(u => u.id === task.assignee)
@@ -601,10 +612,10 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         </div>
       </div>
 
-      <div className="px-5 pb-8 pt-2">
+      <div className="px-5 pb-8 pt-2 md:px-8 md:flex md:justify-end">
         <button
           onClick={save}
-          className="w-full py-3.5 rounded-2xl bg-[#C4623A] text-white text-sm font-semibold tracking-wide"
+          className="w-full md:w-auto md:px-10 py-3.5 rounded-2xl bg-[#C4623A] text-white text-sm font-semibold tracking-wide"
         >
           {es.common.saveChanges}
         </button>
@@ -647,15 +658,15 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
 
   return (
     <div className="flex flex-col h-full relative">
-      <div className="px-5 pt-6 pb-4 bg-[#F6EFE3]">
+      <div className="px-5 pt-6 pb-4 md:px-8 md:pt-8 bg-[#F6EFE3]">
         {selected ? (
-          <button onClick={() => setSelected(null)} className="flex items-center gap-1 text-[#A89880] text-sm mb-3">
+          <button onClick={() => setSelected(null)} className="flex items-center gap-1 min-h-11 pr-3 -mt-2 mb-1 text-[#6E604E] text-sm">
             <span>←</span> <span>{es.members.allMembers}</span>
           </button>
         ) : null}
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs text-[#A89880] font-medium uppercase tracking-widest">{es.members.household}</p>
+            <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest">{es.members.household}</p>
             <h2 className="font-display text-2xl text-[#3D2E1E] mt-0.5">
               {selectedUser ? selectedUser.name : es.members.title}
             </h2>
@@ -665,7 +676,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
               onClick={() => setModal('add')}
               aria-label={es.members.addMember}
               title={es.members.addMember}
-              className="w-9 h-9 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
+              className="w-11 h-11 shrink-0 rounded-full bg-[#C4623A] text-white text-xl flex items-center justify-center shadow-sm"
             >
               +
             </button>
@@ -674,7 +685,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
             <div className="flex gap-2">
               <button
                 onClick={() => setModal('edit')}
-                className="w-8 h-8 rounded-full bg-[#EDE4D4] flex items-center justify-center text-sm"
+                className="w-11 h-11 rounded-full bg-[#EDE4D4] flex items-center justify-center text-sm"
                 title={es.members.edit}
                 aria-label={es.members.edit}
               >
@@ -682,7 +693,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
               </button>
               <button
                 onClick={() => setDeleteTarget(selected)}
-                className="w-8 h-8 rounded-full bg-[#F5D4C2] flex items-center justify-center text-sm"
+                className="w-11 h-11 rounded-full bg-[#F5D4C2] flex items-center justify-center text-sm"
                 title={es.members.delete}
                 aria-label={es.members.delete}
               >
@@ -694,11 +705,11 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
       </div>
 
       {!selected ? (
-        <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+        <div className="flex-1 overflow-y-auto px-5 py-3 md:px-8 flex flex-col gap-3 md:grid md:grid-cols-2 md:content-start xl:grid-cols-3">
           {users.length === 0 && (
-            <div className="text-center pt-12">
+            <div className="col-span-full text-center pt-12">
               <p className="text-3xl mb-2">👥</p>
-              <p className="text-sm text-[#A89880]">{es.members.empty}</p>
+              <p className="text-sm text-[#6E604E]">{es.members.empty}</p>
             </div>
           )}
           {stats.map(u => (
@@ -711,7 +722,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
                 <Avatar user={u} size={44} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-[#3D2E1E]">{u.name}</p>
-                  <p className="text-[11px] text-[#A89880]">{es.members.doneThisWeek(u.done, u.total)}</p>
+                  <p className="text-[11px] text-[#6E604E]">{es.members.doneThisWeek(u.done, u.total)}</p>
                   <div className="mt-2 h-1.5 rounded-full bg-[#EDE4D4]">
                     <div className="h-full rounded-full transition-all" style={{ width: `${u.pct}%`, background: u.color }} />
                   </div>
@@ -722,14 +733,14 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
           ))}
 
           {users.length > 0 && tasks.length > 0 && (
-            <div className="bg-[#3D2E1E] rounded-2xl px-4 py-4 mt-1">
-              <p className="text-[10px] text-[#A89880] uppercase tracking-widest mb-2">{es.members.householdTotal}</p>
+            <div className="col-span-full bg-[#3D2E1E] rounded-2xl px-4 py-4 mt-1">
+              <p className="text-[11px] text-[#6E604E] uppercase tracking-widest mb-2">{es.members.householdTotal}</p>
               <div className="flex items-end justify-between">
                 <div>
                   <p className="text-3xl font-display text-[#F6EFE3]">
-                    {Math.round((tasks.filter(t => t.done).length / tasks.length) * 100)}%
+                    {tasks.length ? Math.round((tasks.filter(t => t.done).length / tasks.length) * 100) : 0}%
                   </p>
-                  <p className="text-xs text-[#A89880] mt-0.5">{es.members.weeklyCompletion}</p>
+                  <p className="text-xs text-[#6E604E] mt-0.5">{es.members.weeklyCompletion}</p>
                 </div>
                 <div className="flex -space-x-2">
                   {users.map(u => <Avatar key={u.id} user={u} size={28} />)}
@@ -739,7 +750,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
           )}
         </div>
       ) : selectedUser && selectedStat && (
-        <div className="flex-1 overflow-y-auto px-5 py-3">
+        <div className="flex-1 overflow-y-auto px-5 py-3 md:px-8">
           <div className="rounded-2xl px-4 py-4 mb-4 text-white" style={{ background: selectedUser.color }}>
             <div className="flex items-center gap-3">
               <Avatar user={selectedUser} size={48} />
@@ -754,24 +765,24 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
             <p className="text-xs opacity-70 mt-1">{es.members.percentComplete(selectedStat.pct)}</p>
           </div>
 
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A89880] mb-2">{es.members.assignedTasks}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] mb-2">{es.members.assignedTasks}</p>
           {userTasks.length === 0 && (
-            <p className="text-xs text-[#A89880] text-center pt-4">{es.members.noTasksAssigned}</p>
+            <p className="text-xs text-[#6E604E] text-center pt-4">{es.members.noTasksAssigned}</p>
           )}
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3">
             {userTasks.map(task => (
               <div key={task.id} className="bg-white rounded-xl px-4 py-3 flex items-center gap-3">
                 <span
                   className="w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0"
-                  style={task.done ? { background: '#6B7C4E', color: '#fff' } : { background: '#EDE4D4', color: '#A89880' }}
+                  style={task.done ? { background: '#6B7C4E', color: '#fff' } : { background: '#EDE4D4', color: '#6E604E' }}
                 >
                   {task.done ? '✓' : '○'}
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${task.done ? 'line-through text-[#A89880]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
-                  <div className="flex gap-1.5 mt-0.5">
+                  <p className={`text-sm font-medium ${task.done ? 'line-through text-[#6E604E]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
+                  <div className="flex flex-wrap gap-1.5 mt-0.5">
                     <Badge label={categoryLabel(task.category)} color={categoryColor[task.category] ?? '#888'} />
-                    <Badge label={recurrenceLabel(task.recurrence)} color="#A89880" />
+                    <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
                   </div>
                 </div>
               </div>

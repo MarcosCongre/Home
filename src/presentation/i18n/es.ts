@@ -55,6 +55,7 @@ export const recurrenceLabel = (value: string) => labelFor(RECURRENCE_LABELS, va
 export const priorityLabel = (value: string) => labelFor(PRIORITY_LABELS, value)
 
 export const es = {
+  appTitle: 'Tareas del hogar',
   common: {
     all: 'Todos',
     allDays: 'Todos',
