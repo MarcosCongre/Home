@@ -6,6 +6,7 @@ namespace App\Application\Tasks\CompleteTask;
 
 use App\Application\Alerts\CreateAlert\CreateAlertCommand;
 use App\Application\Alerts\CreateAlert\CreateAlertHandler;
+use App\Application\Tasks\AssigneeGuard\AssigneeGuard;
 use App\Application\Tasks\AssignmentAlert\AssignmentAlertNotifier;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\MemberRepositoryInterface;
@@ -31,8 +32,10 @@ final class CompleteTaskHandler
             throw new \RuntimeException(sprintf('Task %s was not found.', $command->taskId));
         }
 
-        if ($task->isRepeatable() && $command->nextAssigneeId !== null) {
-            $this->assertMemberBelongsToHousehold($command->nextAssigneeId, $task->householdId());
+        // Only a repeatable task is handed on; the same guard as create/update rejects
+        // unknown, soft-deleted, or other-household members.
+        if ($task->isRepeatable()) {
+            (new AssigneeGuard($this->memberRepository))->ensureAssignable($command->nextAssigneeId, $task->householdId());
         }
 
         // Credit the completion to whoever held the task before it is handed on.
@@ -72,18 +75,5 @@ final class CompleteTaskHandler
         }
 
         return $task;
-    }
-
-    private function assertMemberBelongsToHousehold(int $memberId, string $householdId): void
-    {
-        // Without a member repository (e.g. isolated tests) the id is trusted as given.
-        if ($this->memberRepository === null) {
-            return;
-        }
-
-        $member = $this->memberRepository->findById($memberId);
-        if ($member === null || $member->householdId() !== $householdId) {
-            throw new \InvalidArgumentException(sprintf('Member %d does not belong to this household.', $memberId));
-        }
     }
 }

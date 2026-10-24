@@ -159,6 +159,30 @@ final class CompleteTaskHandlerTest extends TestCase
         }
     }
 
+    public function testItRejectsASoftDeletedNextAssignee(): void
+    {
+        $repository = new InMemoryTaskRepository();
+        $repository->save($this->repeatableTask(id: 107, assignedMemberId: 1));
+        $members = new InMemoryMemberRepository();
+        $members->save(Member::create(0, 'Ana', 'A', '#C4963A', 'house-42'));
+        $bruno = Member::create(0, 'Bruno', 'B', '#6B7C4E', 'house-42');
+        $members->save($bruno);
+        $bruno->delete(new \DateTimeImmutable('2026-09-16 09:00:00'));
+        $members->save($bruno);
+
+        $handler = new CompleteTaskHandler($repository, memberRepository: $members);
+
+        try {
+            $handler->handle(new CompleteTaskCommand(taskId: 107, userId: '1', nextAssigneeId: 2));
+            $this->fail('A soft-deleted member must not receive the task.');
+        } catch (\InvalidArgumentException $exception) {
+            $this->assertSame('Assigned member does not exist in this household.', $exception->getMessage());
+            $this->assertSame(1, $repository->findById(107)->assignedMemberId());
+            $this->assertSame(TaskStatus::PENDING, $repository->findById(107)->status());
+            $this->assertNull($repository->findById(107)->completedAt());
+        }
+    }
+
     private function repeatableTask(int $id, int $assignedMemberId): Task
     {
         $task = Task::create(
