@@ -1,6 +1,6 @@
 # Feature: task-catalogs
 
-**Status:** T1–T4 done; deploy next
+**Status:** T1–T4 done, reviewed, deployed to the home server and pushed; PRs pending (user)
 **Branch:** `feat/task-catalogs` (stacked on `feat/repeatable-tasks`)
 
 ## Objective
@@ -99,4 +99,12 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Next step
 
-- deploy backend + frontend to the server (re-run the 007 backfill first), then push the stacked branches (user-authorized 2026-10-24).
+- User: open the stacked PRs (`feat/task-delete-confirmation` → `main`, `feat/repeatable-tasks` → `feat/task-delete-confirmation`, `feat/task-catalogs` → `feat/repeatable-tasks`) and check the app manually.
+- Open product questions: completed non-repeatable recurring tasks stay locked after one rotation; tasks keep dangling ids when a catalog entry is deleted; `ApiError` does not carry backend messages; `npm run format` is broken.
+
+## Delivery
+
+- 2026-10-24: T4 review: assessed medium (`slice_budget_reached`) vs `eaf8d00`; consent granted; reliability review approved and acknowledged. Advisory: R3-001 (`useTasks.ts:176-181`), R3-002 (`useTasks.ts:170-171`), R3-003 (`task.ts:37-47`).
+- 2026-10-24: 007 re-run on the server right before the deploy: 25 tasks, 0 missing ids; 8 categories, 6 recurrence types.
+- 2026-10-24: `deploy/deploy.sh` deployed `9817d69`. Smoke test: home page 200; `/api/categories` and `/api/recurrence-types` return the `hh_001` catalogs; `/api/tasks` returns 24 live tasks with `categoryId`/`recurrenceId` and names.
+- 2026-10-24: pushed `feat/task-delete-confirmation` (`6880b76`), `feat/repeatable-tasks` (`acb86d2`) and `feat/task-catalogs` to origin (user-authorized).
