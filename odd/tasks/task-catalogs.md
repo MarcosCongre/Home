@@ -1,6 +1,6 @@
 # Feature: task-catalogs
 
-**Status:** T1–T3 done, T4 next
+**Status:** T1–T4 done; deploy next
 **Branch:** `feat/task-catalogs` (stacked on `feat/repeatable-tasks`)
 
 ## Objective
@@ -49,7 +49,14 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
   - Test policy: no frontend test runner exists, so test-first does not apply; verified with `npx tsc --noEmit` and `npm run build`.
   - Manual check: with the backend running, open Configuración → both lists show the seeded defaults; add a category with a custom color, rename it, try a duplicate name in another case (inline 400 message), delete it through the dialog; add a recurrence "Cada 10 días", try 0 and 366 (inline validation); reload and confirm the changes persisted. With `VITE_DEMO_MODE=true`, repeat without a backend (changes live in memory until reload).
   - Formatter note: `npm run format` (oxfmt 0.2) rewrote all 31 files to double quotes and produced code that does not compile (`{ id: number name: string }`, missing separators). Its output was discarded; the repo's existing style was kept by hand.
-- [ ] T4 — Frontend tasks use catalogs: TaskModal, Dashboard filter/badges and TaskDetail read the household catalogs instead of hard-coded lists.
+  - Review: assessed medium (slice_budget_reached) vs c376c80; consent granted; reliability review approved and acknowledged (review-8467c4336fed80bb). Reviewed boundary is now eaf8d00. Advisory: delete dialog state race (SettingsScreen.tsx:71-95); a load can overwrite local mutations (useCatalog.ts:100-108); pure catalog rules unproved by tests (no runner).
+- [x] T4 — Frontend tasks use catalogs: TaskModal, Dashboard filter/badges and TaskDetail read the household catalogs instead of hard-coded lists.
+  - Route: delegated (writer). Trigger: 2+ non-trivial files across domain, application, infrastructure and presentation.
+  - Commit: `cc56370` (+316/−178).
+  - Summary: `Task` holds `categoryId`/`recurrenceId` (`number | null`) plus the API-resolved `category`/`recurrence` names (`string | null`); `taskMapper` reads the ids (non-positive or missing → null) and no longer invents 'Uncategorized'/'Once'. `taskChanges(original, edited)` in `src/domain/tasks/task.ts` keeps only fields that differ; `useTasks.updateTask(taskId, changes)` diffs against the stored task, skips the request when nothing changed, and `taskApi.updateTask` builds the PATCH body from present keys only, so an unchanged (possibly dangling) catalog id is never re-sent and an untouched assignee is no longer re-sent either. `createTask` sends `categoryId`/`recurrenceId` (null allowed); the legacy strings are gone from both requests. `src/presentation/components/taskCatalogDisplay.ts` derives display text (catalog name by id → API name → "Sin categoría"/"Una vez", translated through `categoryLabel`/`recurrenceLabel`, custom names as-is) and the badge color (catalog `color`, else neutral `#888`). TaskModal pickers list the household catalogs plus "Sin categoría"/"Una vez"; a new task defaults to no category and one-off; a dangling id highlights the "none" chip and is only sent if the user changes it. Dashboard filter: 'All' sentinel plus the household categories (horizontal scroll on mobile, wraps on desktop; a filter whose category disappears falls back to 'All'). Calendar, Members and TaskDetail badges use the same helpers. TaskDetail now persists through `updateTask` (before it only edited local state), with a saving state and an inline error; its recurrence picker uses the catalog plus "Una vez", so changing only the recurrence sends only `recurrenceId`. Demo: `DEMO_CATEGORIES`/`DEMO_RECURRENCE_TYPES` are explicit literals (same ids as before) and `INIT_TASKS` reference them; in demo mode create/update apply in memory. Removed `CATEGORIES`, `RECURRENCES`, `categoryColor` and the unused `Uncategorized`/`Once`/`none` labels.
+  - Test policy: no frontend test runner exists, so test-first does not apply; verified with `npx tsc --noEmit` and `npm run build`.
+  - Manual check: with the new backend running, open Inicio → the filter shows "Todas" plus the household categories and badges use their colors; Calendario → "+" → the pickers show "Sin categoría"/"Una vez" selected; create a task with a category and a recurrence, reload, confirm both persisted. Edit it and change only the title: the PATCH body (devtools) has no `categoryId`/`recurrenceId`. In Configuración delete that category: the task shows "Sin categoría" with the neutral color, and editing its title still saves (no 400). Open the task detail, change only the recurrence and save: the PATCH body is `{"recurrenceId": N}`. Rename a category in Configuración: task badges show the new name. With `VITE_DEMO_MODE=true`, repeat create/edit without a backend.
+  - Not changed: demo-mode delete still calls the API (pre-existing).
 
 ## Acceptance criteria
 
@@ -61,6 +68,8 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Known notes
 
+- `npm run format` (oxfmt ^0.2) rewrites to double quotes and outputs uncompilable TS; do not run it until fixed.
+- Migrations 006 and 007 were applied on the server by the user on 2026-10-24; a read-only check showed hh_001 with 8 categories and 6 recurrence types, and 0 of 25 tasks missing ids. The deployed backend is still the old one, so re-run only the 007 backfill right before deploying.
 - The MySQL migrations 001–005 never add `day`, `time`, `category`, `recurrence` or `priority` to `tasks`; only the SQLite schema in `PdoTaskRepository` has them. Verified on the server on 2026-10-24 (`SHOW CREATE TABLE tasks`, read-only, user-authorized SSH): they exist there, added by hand: `day varchar(3)`, `time varchar(8)`, `category varchar(64)`, `recurrence varchar(32)`, `priority varchar(8) NOT NULL DEFAULT 'med'`. T2's migration closes the drift with `ADD COLUMN IF NOT EXISTS`.
 
 ## Checks
@@ -75,6 +84,7 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 - 2026-10-24: T2 done (`3031265`). RED: `TaskCatalogReferencesTest::testItCreatesATaskReferencingCatalogEntriesOfItsHousehold` failed with `Error: Unknown named parameter $categoryRepository` (guard tests: `Class "App\Application\Tasks\CatalogGuard\CatalogGuard" not found`); `TaskAssignmentPolicyTest` failed with `TypeError: ...weightOf(): Argument #1 ($recurrence) must be of type ?string, int given`; `TaskControllerTest` new cases failed with `Unknown named parameter $categoryRepository`. GREEN: `composer test` → OK (228 tests, 566 assertions).
 - 2026-10-24: T2b done (`5daed26`). RED: `TaskAssignmentPolicyTest` 7 failures, e.g. `testRecurringTaskStaysWithItsAssigneeWhileNotCompletedEvenDaysLater` failed with `Failed asserting that two arrays are identical` (expected `[]`, got `[1 => 2]`), likewise the completion-day, timezone, completion-at-assignment, completed non-repeatable, unresolved-recurrence and no-assignment-date cases. GREEN: `composer test` → OK (226 tests, 565 assertions); 12 obsolete N-day cycle cases removed, 10 added.
 - 2026-10-24: T3 done (`03f620c`). No frontend test runner, so no RED/GREEN (exception recorded on T3). `npx tsc --noEmit` → exit 0, no errors; `npm run build` → built in 1.01s (288.08 kB JS). `npm run format` was run and reverted because its output did not compile.
+- 2026-10-24: T4 done (`cc56370`). No frontend test runner, so no RED/GREEN (exception recorded on T4). `npx tsc --noEmit` → exit 0, no errors; `npm run build` → built in 1.68s (291.25 kB JS).
 
 ## Open notes from T2
 
@@ -89,4 +99,4 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Next step
 
-- T4. Before deploy: dry-run 006 + 007 on a production copy; deploy backend and frontend together after T4.
+- deploy backend + frontend to the server (re-run the 007 backfill first), then push the stacked branches (user-authorized 2026-10-24).
