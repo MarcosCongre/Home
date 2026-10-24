@@ -108,6 +108,10 @@ export const es = {
     addTitle: 'Agregar tarea',
     editTitle: 'Editar tarea',
     addButton: 'Agregar tarea',
+    delete: 'Eliminar tarea',
+    deleteTitle: (title: string) => `¿Eliminar «${title}»?`,
+    deleteMessage: 'Esta acción no se puede deshacer.',
+    deleteConfirm: 'Eliminar',
   },
   taskDetail: {
     completionHistory: 'Historial de cumplimiento',

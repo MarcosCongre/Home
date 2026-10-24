@@ -128,12 +128,13 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
   )
 }
 
-export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, onUpdateTask }: {
+export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, onUpdateTask, onDeleteTask }: {
   tasks: Task[]
   users: User[]
   onSelect: (id: number) => void
   onCreateTask: (data: TaskFormData) => Promise<void>
   onUpdateTask: (id: number, data: TaskFormData) => Promise<void>
+  onDeleteTask: (id: number) => Promise<void>
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [activeDay, setActiveDay] = useState('All')
@@ -246,6 +247,10 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
           defaultDay={activeDay === 'All' ? DAYS[0] : activeDay}
           users={users}
           onClose={() => setTaskModal(null)}
+          onDelete={taskModal === 'add' ? undefined : async () => {
+            await onDeleteTask(taskModal.id)
+            setTaskModal(null)
+          }}
           onSave={async (data) => {
             if (taskModal === 'add') {
               await onCreateTask(data)

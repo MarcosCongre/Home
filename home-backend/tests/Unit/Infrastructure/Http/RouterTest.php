@@ -28,6 +28,26 @@ final class RouterTest extends TestCase
         $this->assertSame('house-1', $response['householdId']);
     }
 
+    public function testItDispatchesDeleteTaskRoute(): void
+    {
+        $tasks = new InMemoryTaskRepository();
+        $router = new Router($tasks);
+
+        $created = $router->dispatch([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/tasks',
+            'php://input' => '{"title":"Fold laundry","householdId":"house-1"}'
+        ]);
+
+        $response = $router->dispatch([
+            'REQUEST_METHOD' => 'DELETE',
+            'PATH_INFO' => '/tasks/' . $created['id'],
+        ]);
+
+        $this->assertSame(['deleted' => true, 'id' => $created['id']], $response);
+        $this->assertNull($tasks->findById($created['id']));
+    }
+
     public function testItRejectsUnknownRoutes(): void
     {
         $router = new Router(new InMemoryTaskRepository());

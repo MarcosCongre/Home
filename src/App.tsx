@@ -30,6 +30,7 @@ export default function App() {
     loadTasks,
     createTask,
     updateTask,
+    deleteTask,
     error: taskError,
     autoAssign,
     isAutoAssigning,
@@ -130,6 +131,7 @@ export default function App() {
               users={users}
               onCreateTask={createTask}
               onUpdateTask={updateTask}
+              onDeleteTask={deleteTask}
             />
           ) : tab === 'alerts' ? (
             <Notifications
