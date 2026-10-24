@@ -28,12 +28,9 @@ final class InMemoryTaskRepository implements TaskRepositoryInterface
 
     public function findById(int $id): ?Task
     {
-        return $this->tasks[$id] ?? null;
-    }
+        $task = $this->tasks[$id] ?? null;
 
-    public function delete(int $id): void
-    {
-        unset($this->tasks[$id]);
+        return $task === null || $task->isDeleted() ? null : $task;
     }
 
     /**
@@ -43,7 +40,7 @@ final class InMemoryTaskRepository implements TaskRepositoryInterface
     {
         $tasks = array_values(array_filter(
             $this->tasks,
-            static fn (Task $task): bool => $task->householdId() === $householdId
+            static fn (Task $task): bool => $task->householdId() === $householdId && !$task->isDeleted()
         ));
 
         usort(

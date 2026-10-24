@@ -21,7 +21,8 @@ class Task
         private ?string $category = null,
         private ?string $recurrence = null,
         private string $priority = 'med',
-        private ?DateTimeImmutable $lastAssignedAt = null
+        private ?DateTimeImmutable $lastAssignedAt = null,
+        private ?DateTimeImmutable $deletedAt = null
     ) {
     }
 
@@ -112,6 +113,28 @@ class Task
     {
         $this->assignedMemberId = $memberId;
         $this->lastAssignedAt = $assignedAt;
+    }
+
+    // Drops the assignee but keeps the last assignment date for rotation history.
+    public function unassign(): void
+    {
+        $this->assignedMemberId = null;
+    }
+
+    // Soft delete: the first deletion date wins.
+    public function delete(DateTimeImmutable $now): void
+    {
+        $this->deletedAt ??= $now;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
+    }
+
+    public function deletedAt(): ?DateTimeImmutable
+    {
+        return $this->deletedAt;
     }
 
     public function id(): int

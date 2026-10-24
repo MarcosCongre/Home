@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Members;
 
+use DateTimeImmutable;
+
 final class Member
 {
     public function __construct(
@@ -11,7 +13,8 @@ final class Member
         private string $name,
         private string $avatar,
         private string $color,
-        private readonly string $householdId
+        private readonly string $householdId,
+        private ?DateTimeImmutable $deletedAt = null
     ) {
         $this->validate();
     }
@@ -73,6 +76,22 @@ final class Member
         $this->color = trim($color);
 
         $this->validate();
+    }
+
+    // Soft delete: the first deletion date wins.
+    public function delete(DateTimeImmutable $now): void
+    {
+        $this->deletedAt ??= $now;
+    }
+
+    public function isDeleted(): bool
+    {
+        return $this->deletedAt !== null;
+    }
+
+    public function deletedAt(): ?DateTimeImmutable
+    {
+        return $this->deletedAt;
     }
 
     private function validate(): void

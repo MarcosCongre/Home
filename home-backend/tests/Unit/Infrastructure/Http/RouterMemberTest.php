@@ -52,4 +52,36 @@ final class RouterMemberTest extends TestCase
         $this->assertCount(1, $listed);
         $this->assertSame('Archi', $listed[0]['name']);
     }
+
+    public function testItRoutesMemberDeleteAndUnassignsTheirTasks(): void
+    {
+        $taskRepository = new InMemoryTaskRepository();
+        $memberRepository = new InMemoryMemberRepository();
+        $router = new Router($taskRepository, $memberRepository);
+
+        $member = $router->dispatch([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/members',
+            'php://input' => json_encode(['name' => 'Archie', 'avatar' => 'A', 'color' => '#C4963A', 'householdId' => 'house-9']),
+        ]);
+        $task = $router->dispatch([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/tasks',
+            'php://input' => json_encode(['title' => 'Fold laundry', 'householdId' => 'house-9', 'assignedMemberId' => $member['id']]),
+        ]);
+
+        $response = $router->dispatch([
+            'REQUEST_METHOD' => 'DELETE',
+            'PATH_INFO' => '/members/' . $member['id'],
+        ]);
+
+        $this->assertSame(['deleted' => true, 'id' => $member['id']], $response);
+        $listed = $router->dispatch([
+            'REQUEST_METHOD' => 'GET',
+            'PATH_INFO' => '/members',
+            'QUERY_STRING' => 'householdId=house-9',
+        ]);
+        $this->assertSame([], $listed);
+        $this->assertNull($taskRepository->findById($task['id'])?->assignedMemberId());
+    }
 }

@@ -116,7 +116,7 @@ final class Router
         }
 
         if ($this->memberRepository !== null && $method === 'DELETE' && preg_match('#^/members/([^/]+)$#', $path, $matches) === 1) {
-            $controller = new MemberController($this->memberRepository);
+            $controller = new MemberController($this->memberRepository, $this->taskRepository, $this->transactionRunner);
             $id = $this->positiveId($matches[1]);
             $controller->delete($id);
             return ['deleted' => true, 'id' => $id];

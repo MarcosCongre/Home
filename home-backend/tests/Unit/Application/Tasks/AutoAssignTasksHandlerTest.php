@@ -147,11 +147,6 @@ final class AutoAssignTasksHandlerTest extends TestCase
                 return $this->inner->findById($id);
             }
 
-            public function delete(int $id): void
-            {
-                $this->inner->delete($id);
-            }
-
             public function findByHouseholdId(string $householdId): array
             {
                 return $this->inner->findByHouseholdId($householdId);
@@ -177,6 +172,28 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $this->assertSame(2, $repository->findById(2)?->assignedMemberId());
         $this->assertFalse($pdo->inTransaction());
         $this->assertSame([], $alerts->saved, 'No alerts are sent for a rolled-back batch.');
+    }
+
+    public function testItSkipsSoftDeletedMembersAndTasks(): void
+    {
+        $now = new DateTimeImmutable('2026-10-19 12:00:00');
+        $tasks = new InMemoryTaskRepository();
+        $members = $this->membersOf('house-1', 2);
+        $deletedMember = $members->findById(1);
+        $deletedMember?->delete($now);
+        $members->save($deletedMember);
+
+        $tasks->save($this->task(1, 'house-1', 'Weekly'));
+        $deletedTask = $this->task(2, 'house-1', 'Weekly');
+        $deletedTask->delete($now);
+        $tasks->save($deletedTask);
+
+        $handler = new AutoAssignTasksHandler($tasks, $members, null, new LowestIdTieBreaker());
+        $updated = $handler->handle(new AutoAssignTasksCommand('house-1', $now));
+
+        $this->assertSame([1], array_map(static fn (Task $task): int => $task->id(), $updated));
+        $this->assertSame(2, $tasks->findById(1)?->assignedMemberId(), 'Only the remaining member is a candidate.');
+        $this->assertNull($deletedTask->assignedMemberId());
     }
 
     public function testItRequiresAHouseholdId(): void
