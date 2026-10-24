@@ -31,7 +31,11 @@ final class UpdateTaskHandler
         }
 
         // Validate everything before mutating, so a rejected update changes nothing.
-        (new AssigneeGuard($this->memberRepository))->ensureAssignable($command->assignedMemberId, $task->householdId());
+        // A null id is a no-op for the guard, so keeping or clearing the assignee skips validation.
+        (new AssigneeGuard($this->memberRepository))->ensureAssignable(
+            $command->clearAssignee ? null : $command->assignedMemberId,
+            $task->householdId()
+        );
         (new CatalogGuard($this->categoryRepository, $this->recurrenceTypeRepository))->ensureReferences(
             $command->clearCategory ? null : $command->categoryId,
             $command->clearRecurrence ? null : $command->recurrenceId,
@@ -40,7 +44,7 @@ final class UpdateTaskHandler
 
         $task->update(
             title: $command->title,
-            assignedMemberId: $command->assignedMemberId,
+            assignedMemberId: $command->clearAssignee ? null : ($command->assignedMemberId ?? $task->assignedMemberId()),
             status: $command->status,
             day: $command->day,
             time: $command->time,

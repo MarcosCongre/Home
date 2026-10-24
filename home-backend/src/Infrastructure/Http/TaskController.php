@@ -77,10 +77,11 @@ final class TaskController
             $this->recurrenceTypeRepository
         );
 
-        // An absent catalog reference keeps the stored one; an explicit null (or "") clears it.
+        // PATCH semantics: an absent field keeps the stored value. An explicit null (or "") clears
+        // the assignee and catalog references; an explicit empty title is rejected by TaskTitle.
         return $this->serializeTask($handler->handle(new UpdateTaskCommand(
             taskId: $taskId,
-            title: (string) ($payload['title'] ?? ''),
+            title: array_key_exists('title', $payload) ? (string) $payload['title'] : null,
             assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null),
             status: $status,
             day: $this->optionalValidatedDay($payload['day'] ?? null),
@@ -90,7 +91,8 @@ final class TaskController
             priority: $this->optionalValidatedPriority($payload['priority'] ?? null),
             repeatable: $this->optionalBool($payload['repeatable'] ?? null),
             clearCategory: $this->isExplicitlyEmpty($payload, 'categoryId'),
-            clearRecurrence: $this->isExplicitlyEmpty($payload, 'recurrenceId')
+            clearRecurrence: $this->isExplicitlyEmpty($payload, 'recurrenceId'),
+            clearAssignee: $this->isExplicitlyEmpty($payload, 'assignedMemberId')
         )));
     }
 

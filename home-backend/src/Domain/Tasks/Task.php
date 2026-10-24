@@ -88,8 +88,9 @@ class Task
         $this->completedAt = null;
     }
 
+    // A null title keeps the current one; the assignee given here always replaces the current one.
     public function update(
-        string $title,
+        ?string $title,
         ?int $assignedMemberId,
         ?TaskStatus $status = null,
         ?string $day = null,
@@ -97,7 +98,9 @@ class Task
         ?string $priority = null,
         ?bool $repeatable = null
     ): void {
-        $this->title = new TaskTitle($title);
+        if ($title !== null) {
+            $this->title = new TaskTitle($title);
+        }
         if ($assignedMemberId !== $this->assignedMemberId) {
             $this->assignedMemberId = $assignedMemberId;
             $this->lastAssignedAt = $assignedMemberId === null ? null : new DateTimeImmutable();

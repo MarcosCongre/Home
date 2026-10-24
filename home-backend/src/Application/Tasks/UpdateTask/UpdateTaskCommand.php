@@ -7,14 +7,15 @@ namespace App\Application\Tasks\UpdateTask;
 use App\Domain\Tasks\TaskStatus;
 
 /**
- * Catalog references have three states: a null id with no clear flag keeps the current
- * value, a non-null id replaces it, and a clear flag removes it.
+ * A null title keeps the current one. The assignee and catalog references have three states:
+ * a null id with no clear flag keeps the current value, a non-null id replaces it, and a clear
+ * flag removes it.
  */
 readonly class UpdateTaskCommand
 {
     public function __construct(
         public int $taskId,
-        public string $title,
+        public ?string $title = null,
         public ?int $assignedMemberId = null,
         public ?TaskStatus $status = null,
         public ?string $day = null,
@@ -24,7 +25,8 @@ readonly class UpdateTaskCommand
         public ?string $priority = null,
         public ?bool $repeatable = null,
         public bool $clearCategory = false,
-        public bool $clearRecurrence = false
+        public bool $clearRecurrence = false,
+        public bool $clearAssignee = false
     ) {
     }
 }

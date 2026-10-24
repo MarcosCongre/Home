@@ -69,6 +69,47 @@ final class TaskControllerTest extends TestCase
         $this->assertSame(4, $updated['assignedMemberId']);
     }
 
+    public function testUpdateWithOnlyThePriorityKeepsTheTitleAndTheAssignee(): void
+    {
+        [$controller, $taskId] = $this->assignedTaskFixture();
+
+        $updated = $controller->update($taskId, ['priority' => 'high']);
+
+        $this->assertSame('high', $updated['priority']);
+        $this->assertSame('Feed the cat', $updated['title']);
+        $this->assertSame(1, $updated['assignedMemberId']);
+        $this->assertNotNull($updated['lastAssignedAt']);
+    }
+
+    public function testUpdateWithOnlyTheTitleKeepsTheAssignee(): void
+    {
+        [$controller, $taskId] = $this->assignedTaskFixture();
+
+        $updated = $controller->update($taskId, ['title' => 'Feed both cats']);
+
+        $this->assertSame('Feed both cats', $updated['title']);
+        $this->assertSame(1, $updated['assignedMemberId']);
+    }
+
+    public function testUpdateWithAnExplicitNullAssigneeUnassignsTheTask(): void
+    {
+        [$controller, $taskId] = $this->assignedTaskFixture();
+
+        $updated = $controller->update($taskId, ['assignedMemberId' => null]);
+
+        $this->assertNull($updated['assignedMemberId']);
+        $this->assertSame('Feed the cat', $updated['title']);
+    }
+
+    public function testUpdateRejectsAnExplicitlyEmptyTitle(): void
+    {
+        [$controller, $taskId] = $this->assignedTaskFixture();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $controller->update($taskId, ['title' => '']);
+    }
+
     public function testItRejectsAnInvalidDay(): void
     {
         $this->expectException(\InvalidArgumentException::class);
@@ -276,6 +317,27 @@ final class TaskControllerTest extends TestCase
         $this->assertSame('Floors', $listed[0]['category']);
         $this->assertSame(1, $listed[0]['recurrenceId'], 'The reference itself is kept.');
         $this->assertNull($listed[0]['recurrence']);
+    }
+
+    /**
+     * A task titled "Feed the cat" assigned to member 1 of house-1.
+     *
+     * @return array{TaskController, int}
+     */
+    private function assignedTaskFixture(): array
+    {
+        $members = new InMemoryMemberRepository();
+        $members->save(Member::create(0, 'Ana', 'A', '#C4963A', 'house-1'));
+        $controller = new TaskController(new InMemoryTaskRepository(), null, $members);
+
+        $created = $controller->create([
+            'title' => 'Feed the cat',
+            'householdId' => 'house-1',
+            'assignedMemberId' => 1,
+        ]);
+        $this->assertSame(1, $created['assignedMemberId']);
+
+        return [$controller, $created['id']];
     }
 
     /**

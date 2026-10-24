@@ -83,12 +83,36 @@ final class UpdateTaskHandlerTest extends TestCase
     public function testItAllowsClearingTheAssignee(): void
     {
         [$tasks, $members] = $this->fixture('house-1');
+        $handler = new UpdateTaskHandler($tasks, $members);
+        $handler->handle(new UpdateTaskCommand(taskId: 1, assignedMemberId: 1));
 
-        $task = (new UpdateTaskHandler($tasks, $members))->handle(
-            new UpdateTaskCommand(taskId: 1, title: 'Clean kitchen', assignedMemberId: null)
-        );
+        $task = $handler->handle(new UpdateTaskCommand(taskId: 1, clearAssignee: true));
 
         $this->assertNull($task->assignedMemberId());
+    }
+
+    public function testAbsentTitleAndAssigneeKeepTheStoredValues(): void
+    {
+        [$tasks, $members] = $this->fixture('house-1');
+        $handler = new UpdateTaskHandler($tasks, $members);
+        $assigned = $handler->handle(new UpdateTaskCommand(taskId: 1, assignedMemberId: 1));
+        $assignedAt = $assigned->lastAssignedAt();
+
+        $task = $handler->handle(new UpdateTaskCommand(taskId: 1, priority: 'high'));
+
+        $this->assertSame('high', $task->priority());
+        $this->assertSame('Clean kitchen', $task->title()->value());
+        $this->assertSame(1, $task->assignedMemberId());
+        $this->assertSame($assignedAt, $task->lastAssignedAt());
+    }
+
+    public function testAnExplicitlyEmptyTitleIsRejected(): void
+    {
+        [$tasks, $members] = $this->fixture('house-1');
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        (new UpdateTaskHandler($tasks, $members))->handle(new UpdateTaskCommand(taskId: 1, title: '  '));
     }
 
     private function assertRejected(InMemoryTaskRepository $tasks, InMemoryMemberRepository $members, int $assignee): void
