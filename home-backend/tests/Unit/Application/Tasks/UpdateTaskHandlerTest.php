@@ -35,15 +35,11 @@ final class UpdateTaskHandlerTest extends TestCase
             status: TaskStatus::PENDING,
             day: 'tuesday',
             time: '19:00',
-            category: 'cleaning',
-            recurrence: 'monthly',
             priority: 'low'
         ));
 
         $this->assertSame('tuesday', $updatedTask->day());
         $this->assertSame('19:00', $updatedTask->time());
-        $this->assertSame('cleaning', $updatedTask->category());
-        $this->assertSame('monthly', $updatedTask->recurrence());
         $this->assertSame('low', $updatedTask->priority());
         $this->assertSame(7, $updatedTask->assignedMemberId());
     }

@@ -13,8 +13,8 @@ readonly class CreateTaskCommand
         public ?int $assignedMemberId = null,
         public ?string $day = null,
         public ?string $time = null,
-        public ?string $category = null,
-        public ?string $recurrence = null,
+        public ?int $categoryId = null,
+        public ?int $recurrenceId = null,
         public ?string $priority = null,
         public bool $repeatable = false
     ) {

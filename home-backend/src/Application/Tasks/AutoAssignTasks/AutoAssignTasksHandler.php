@@ -7,12 +7,14 @@ namespace App\Application\Tasks\AutoAssignTasks;
 use App\Application\Shared\ImmediateTransactionRunner;
 use App\Application\Shared\TransactionRunner;
 use App\Application\Tasks\AssignmentAlert\AssignmentAlertNotifier;
+use App\Application\Tasks\HouseholdCatalogs\HouseholdCatalogs;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\Member;
 use App\Domain\Members\MemberRepositoryInterface;
 use App\Domain\Tasks\Assignment\RandomTieBreaker;
 use App\Domain\Tasks\Assignment\TaskAssignmentPolicy;
 use App\Domain\Tasks\Assignment\TieBreaker;
+use App\Domain\Tasks\Catalog\RecurrenceTypeRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use DateTimeImmutable;
@@ -27,7 +29,8 @@ final class AutoAssignTasksHandler
         private readonly MemberRepositoryInterface $memberRepository,
         private readonly ?AlertRepositoryInterface $alertRepository = null,
         ?TieBreaker $tieBreaker = null,
-        ?TransactionRunner $transactionRunner = null
+        ?TransactionRunner $transactionRunner = null,
+        private readonly ?RecurrenceTypeRepositoryInterface $recurrenceTypeRepository = null
     ) {
         $this->policy = new TaskAssignmentPolicy($tieBreaker ?? new RandomTieBreaker());
         $this->transactionRunner = $transactionRunner ?? new ImmediateTransactionRunner();
@@ -49,7 +52,10 @@ final class AutoAssignTasksHandler
             $this->memberRepository->findByHouseholdId($command->householdId)
         );
 
-        $decisions = $this->policy->assign($tasks, $memberIds, $now);
+        $intervals = HouseholdCatalogs::load(null, $this->recurrenceTypeRepository, $command->householdId)
+            ->intervalDaysByRecurrenceId();
+
+        $decisions = $this->policy->assign($tasks, $memberIds, $now, $intervals);
         $updated = [];
 
         foreach ($tasks as $task) {

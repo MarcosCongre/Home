@@ -67,8 +67,8 @@ final class PdoTaskRepositoryTest extends TestCase
             createdAt: new \DateTimeImmutable('2026-09-16 12:00:00'),
             day: 'monday',
             time: '08:30',
-            category: 'household',
-            recurrence: 'weekly',
+            categoryId: 4,
+            recurrenceId: 9,
             priority: 'high'
         );
 
@@ -78,8 +78,8 @@ final class PdoTaskRepositoryTest extends TestCase
         $this->assertNotNull($stored);
         $this->assertSame('monday', $stored->day());
         $this->assertSame('08:30', $stored->time());
-        $this->assertSame('household', $stored->category());
-        $this->assertSame('weekly', $stored->recurrence());
+        $this->assertSame(4, $stored->categoryId());
+        $this->assertSame(9, $stored->recurrenceId());
         $this->assertSame('high', $stored->priority());
 
         $tasks = $repository->findByHouseholdId('house-10');
@@ -101,8 +101,52 @@ final class PdoTaskRepositoryTest extends TestCase
         $this->assertSame('med', $persistedDefault->priority());
         $this->assertNull($persistedDefault->day());
         $this->assertNull($persistedDefault->time());
-        $this->assertNull($persistedDefault->category());
-        $this->assertNull($persistedDefault->recurrence());
+        $this->assertNull($persistedDefault->categoryId());
+        $this->assertNull($persistedDefault->recurrenceId());
+
+        $stored->changeCategory(null);
+        $stored->changeRecurrence(5);
+        $repository->save($stored);
+
+        $updated = $repository->findById(101);
+        $this->assertNull($updated?->categoryId());
+        $this->assertSame(5, $updated?->recurrenceId());
+    }
+
+    public function testItAddsTheCatalogReferenceColumnsToAnExistingSqliteTable(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $pdo->exec('CREATE TABLE tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            status TEXT NOT NULL,
+            household_id TEXT NOT NULL,
+            assigned_member_id INTEGER NULL,
+            created_at TEXT NOT NULL,
+            completed_at TEXT NULL,
+            day TEXT NULL,
+            time TEXT NULL,
+            category TEXT NULL,
+            recurrence TEXT NULL,
+            priority TEXT NOT NULL DEFAULT "med",
+            last_assigned_at TEXT NULL,
+            deleted_at TEXT NULL,
+            repeatable INTEGER NOT NULL DEFAULT 0
+        )');
+
+        $repository = new PdoTaskRepository($pdo);
+        $repository->save(Task::create(
+            id: 0,
+            title: 'Water plants',
+            householdId: 'house-14',
+            createdAt: new \DateTimeImmutable('2026-10-24 08:00:00'),
+            categoryId: 2,
+            recurrenceId: 3
+        ));
+
+        $stored = $repository->findByHouseholdId('house-14')[0];
+        $this->assertSame(2, $stored->categoryId());
+        $this->assertSame(3, $stored->recurrenceId());
     }
 
     public function testItPersistsTimestampsAsAppLocalValues(): void
@@ -142,7 +186,7 @@ final class PdoTaskRepositoryTest extends TestCase
             householdId: 'house-12',
             createdAt: new \DateTimeImmutable('2026-10-01 08:00:00'),
             assignedMemberId: 3,
-            recurrence: 'Weekly',
+            recurrenceId: 1,
             lastAssignedAt: $assignedAt
         ));
         $repository->save(new Task(
@@ -187,7 +231,7 @@ final class PdoTaskRepositoryTest extends TestCase
                 createdAt: $createdAt,
                 completedAt: $completedAt,
                 assignedMemberId: 3,
-                recurrence: 'Weekly',
+                recurrenceId: 1,
                 lastAssignedAt: $assignedAt
             ));
 

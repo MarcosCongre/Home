@@ -27,8 +27,6 @@ final class CreateTaskHandlerTest extends TestCase
             userId: 'user-77',
             day: 'monday',
             time: '20:00',
-            category: 'home',
-            recurrence: 'weekly',
             priority: 'high'
         ));
 
@@ -37,8 +35,6 @@ final class CreateTaskHandlerTest extends TestCase
         $this->assertSame('house-42', $task->householdId());
         $this->assertSame('monday', $task->day());
         $this->assertSame('20:00', $task->time());
-        $this->assertSame('home', $task->category());
-        $this->assertSame('weekly', $task->recurrence());
         $this->assertSame('high', $task->priority());
         $this->assertNotNull($repository->findById($task->id()));
     }

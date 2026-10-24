@@ -11,10 +11,12 @@ use App\Application\Tasks\CreateTask\CreateTaskHandler;
 use App\Domain\Alerts\Alert;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\Member;
+use App\Domain\Tasks\Catalog\RecurrenceType;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use App\Domain\Tasks\TaskTitle;
 use App\Infrastructure\Persistence\InMemoryMemberRepository;
+use App\Infrastructure\Persistence\InMemoryRecurrenceTypeRepository;
 use App\Infrastructure\Persistence\InMemoryTaskRepository;
 use App\Infrastructure\Persistence\PdoTaskRepository;
 use App\Infrastructure\Persistence\PdoTransactionRunner;
@@ -26,6 +28,9 @@ use Tests\Unit\Domain\Tasks\Assignment\LowestIdTieBreaker;
 #[CoversClass(AutoAssignTasksHandler::class)]
 final class AutoAssignTasksHandlerTest extends TestCase
 {
+    // Without a recurrence type repository an id cannot be resolved, so it falls back to every 7 days.
+    private const UNRESOLVED_WEEKLY = 1;
+
     public function testItAssignsTasksPersistsThemAndAlertsTheNewAssignees(): void
     {
         $now = new DateTimeImmutable('2026-10-19 12:00:00');
@@ -33,9 +38,9 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $members = $this->membersOf('house-1', 2);
         $alerts = new RecordingAlertRepository();
 
-        $tasks->save($this->task(1, 'house-1', 'Weekly', assignee: 1, lastAssignedAt: '2026-10-11 12:00:00'));
-        $tasks->save($this->task(2, 'house-1', 'Weekly', assignee: 2, lastAssignedAt: '2026-10-18 12:00:00'));
-        $tasks->save($this->task(3, 'house-2', 'Weekly'));
+        $tasks->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 1, lastAssignedAt: '2026-10-11 12:00:00'));
+        $tasks->save($this->task(2, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 2, lastAssignedAt: '2026-10-18 12:00:00'));
+        $tasks->save($this->task(3, 'house-2', self::UNRESOLVED_WEEKLY));
 
         $handler = new AutoAssignTasksHandler($tasks, $members, $alerts, new LowestIdTieBreaker());
         $updated = $handler->handle(new AutoAssignTasksCommand('house-1', $now));
@@ -57,7 +62,7 @@ final class AutoAssignTasksHandlerTest extends TestCase
     public function testItReturnsNoChangesWhenTheHouseholdHasNoMembers(): void
     {
         $tasks = new InMemoryTaskRepository();
-        $tasks->save($this->task(1, 'house-1', 'Weekly'));
+        $tasks->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY));
 
         $handler = new AutoAssignTasksHandler($tasks, new InMemoryMemberRepository(), null, new LowestIdTieBreaker());
 
@@ -68,7 +73,7 @@ final class AutoAssignTasksHandlerTest extends TestCase
     public function testAnAlertFailureDoesNotFailTheAssignment(): void
     {
         $tasks = new InMemoryTaskRepository();
-        $tasks->save($this->task(1, 'house-1', 'Weekly'));
+        $tasks->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY));
         $failingAlerts = new class implements AlertRepositoryInterface {
             public function findByHousehold(string $householdId): array
             {
@@ -101,17 +106,19 @@ final class AutoAssignTasksHandlerTest extends TestCase
     {
         $tasks = new InMemoryTaskRepository();
         $members = $this->membersOf('house-1', 2);
-        $created = (new CreateTaskHandler($tasks))->handle(new CreateTaskCommand(
+        $recurrenceTypes = new InMemoryRecurrenceTypeRepository();
+        $recurrenceTypes->save(RecurrenceType::create(0, 'house-1', 'Weekly', 7, new DateTimeImmutable()));
+        $created = (new CreateTaskHandler($tasks, recurrenceTypeRepository: $recurrenceTypes))->handle(new CreateTaskCommand(
             title: 'Laundry',
             householdId: 'house-1',
             userId: 'user-1',
             assignedMemberId: 1,
-            recurrence: 'Weekly'
+            recurrenceId: 1
         ));
 
         $this->assertNotNull($created->lastAssignedAt(), 'Creating with an assignee records the assignment date.');
 
-        $handler = new AutoAssignTasksHandler($tasks, $members, null, new LowestIdTieBreaker());
+        $handler = new AutoAssignTasksHandler($tasks, $members, null, new LowestIdTieBreaker(), recurrenceTypeRepository: $recurrenceTypes);
         $updated = $handler->handle(new AutoAssignTasksCommand('house-1', new DateTimeImmutable('+1 hour')));
 
         $this->assertSame([], $updated);
@@ -123,8 +130,8 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $pdo = new \PDO('sqlite::memory:');
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $repository = new PdoTaskRepository($pdo);
-        $repository->save($this->task(1, 'house-1', 'Weekly', assignee: 1, lastAssignedAt: '2026-10-01 12:00:00'));
-        $repository->save($this->task(2, 'house-1', 'Weekly', assignee: 2, lastAssignedAt: '2026-10-01 12:00:00'));
+        $repository->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 1, lastAssignedAt: '2026-10-01 12:00:00'));
+        $repository->save($this->task(2, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 2, lastAssignedAt: '2026-10-01 12:00:00'));
         $alerts = new RecordingAlertRepository();
 
         $failingOnSecondSave = new class ($repository) implements TaskRepositoryInterface {
@@ -183,8 +190,8 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $deletedMember?->delete($now);
         $members->save($deletedMember);
 
-        $tasks->save($this->task(1, 'house-1', 'Weekly'));
-        $deletedTask = $this->task(2, 'house-1', 'Weekly');
+        $tasks->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY));
+        $deletedTask = $this->task(2, 'house-1', self::UNRESOLVED_WEEKLY);
         $deletedTask->delete($now);
         $tasks->save($deletedTask);
 
@@ -194,6 +201,34 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $this->assertSame([1], array_map(static fn (Task $task): int => $task->id(), $updated));
         $this->assertSame(2, $tasks->findById(1)?->assignedMemberId(), 'Only the remaining member is a candidate.');
         $this->assertNull($deletedTask->assignedMemberId());
+    }
+
+    public function testItUsesTheIntervalOfTheHouseholdRecurrenceTypes(): void
+    {
+        $now = new DateTimeImmutable('2026-10-19 12:00:00');
+        $tasks = new InMemoryTaskRepository();
+        $recurrenceTypes = new InMemoryRecurrenceTypeRepository();
+        $daily = RecurrenceType::create(0, 'house-1', 'Daily', 1, $now);
+        $recurrenceTypes->save($daily);
+        $weekly = RecurrenceType::create(0, 'house-1', 'Weekly', 7, $now);
+        $recurrenceTypes->save($weekly);
+
+        // Both were assigned two days ago: the daily cycle has ended, the weekly one has not.
+        $tasks->save($this->task(1, 'house-1', $daily->id(), assignee: 1, lastAssignedAt: '2026-10-17 12:00:00'));
+        $tasks->save($this->task(2, 'house-1', $weekly->id(), assignee: 1, lastAssignedAt: '2026-10-17 12:00:00'));
+
+        $handler = new AutoAssignTasksHandler(
+            $tasks,
+            $this->membersOf('house-1', 2),
+            null,
+            new LowestIdTieBreaker(),
+            recurrenceTypeRepository: $recurrenceTypes
+        );
+        $updated = $handler->handle(new AutoAssignTasksCommand('house-1', $now));
+
+        $this->assertSame([1], array_map(static fn (Task $task): int => $task->id(), $updated));
+        $this->assertSame(2, $tasks->findById(1)?->assignedMemberId());
+        $this->assertSame(1, $tasks->findById(2)?->assignedMemberId());
     }
 
     public function testItRequiresAHouseholdId(): void
@@ -215,7 +250,7 @@ final class AutoAssignTasksHandlerTest extends TestCase
         return $members;
     }
 
-    private function task(int $id, string $householdId, ?string $recurrence, ?int $assignee = null, ?string $lastAssignedAt = null): Task
+    private function task(int $id, string $householdId, ?int $recurrenceId, ?int $assignee = null, ?string $lastAssignedAt = null): Task
     {
         return new Task(
             id: $id,
@@ -223,7 +258,7 @@ final class AutoAssignTasksHandlerTest extends TestCase
             householdId: $householdId,
             createdAt: new DateTimeImmutable('2026-01-01 00:00:0' . $id),
             assignedMemberId: $assignee,
-            recurrence: $recurrence,
+            recurrenceId: $recurrenceId,
             lastAssignedAt: $lastAssignedAt === null ? null : new DateTimeImmutable($lastAssignedAt)
         );
     }

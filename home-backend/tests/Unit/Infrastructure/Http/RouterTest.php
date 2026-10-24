@@ -93,7 +93,7 @@ final class RouterTest extends TestCase
         $router->dispatch([
             'REQUEST_METHOD' => 'POST',
             'PATH_INFO' => '/tasks',
-            'php://input' => '{"title":"Fold laundry","householdId":"house-1","recurrence":"Weekly"}'
+            'php://input' => '{"title":"Fold laundry","householdId":"house-1"}'
         ]);
 
         $response = $router->dispatch([

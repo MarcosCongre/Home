@@ -18,8 +18,11 @@ use App\Application\Tasks\ReopenTask\ReopenTaskHandler;
 use App\Application\Tasks\UpdateTask\UpdateTaskCommand;
 use App\Application\Tasks\UpdateTask\UpdateTaskHandler;
 use App\Application\Tasks\DeleteTask\DeleteTaskHandler;
+use App\Application\Tasks\HouseholdCatalogs\HouseholdCatalogs;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\MemberRepositoryInterface;
+use App\Domain\Tasks\Catalog\CategoryRepositoryInterface;
+use App\Domain\Tasks\Catalog\RecurrenceTypeRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 
@@ -29,7 +32,9 @@ final class TaskController
         private TaskRepositoryInterface $taskRepository,
         private ?AlertRepositoryInterface $alertRepository = null,
         private ?MemberRepositoryInterface $memberRepository = null,
-        private ?TransactionRunner $transactionRunner = null
+        private ?TransactionRunner $transactionRunner = null,
+        private ?CategoryRepositoryInterface $categoryRepository = null,
+        private ?RecurrenceTypeRepositoryInterface $recurrenceTypeRepository = null
     ) {
     }
 
@@ -39,7 +44,13 @@ final class TaskController
      */
     public function create(array $payload): array
     {
-        $handler = new CreateTaskHandler($this->taskRepository, $this->alertRepository, $this->memberRepository);
+        $handler = new CreateTaskHandler(
+            $this->taskRepository,
+            $this->alertRepository,
+            $this->memberRepository,
+            $this->categoryRepository,
+            $this->recurrenceTypeRepository
+        );
         $task = $handler->handle(new CreateTaskCommand(
             title: (string) ($payload['title'] ?? ''),
             householdId: (string) ($payload['householdId'] ?? ''),
@@ -47,8 +58,8 @@ final class TaskController
             assignedMemberId: $this->optionalPositiveInt($payload['assignedMemberId'] ?? null),
             day: $this->optionalValidatedDay($payload['day'] ?? null),
             time: $this->optionalString($payload['time'] ?? null),
-            category: $this->optionalString($payload['category'] ?? null),
-            recurrence: $this->optionalString($payload['recurrence'] ?? null),
+            categoryId: $this->optionalPositiveInt($payload['categoryId'] ?? null),
+            recurrenceId: $this->optionalPositiveInt($payload['recurrenceId'] ?? null),
             priority: $this->optionalValidatedPriority($payload['priority'] ?? null),
             repeatable: $this->optionalBool($payload['repeatable'] ?? null) ?? false
         ));
@@ -59,7 +70,14 @@ final class TaskController
     public function update(int $taskId, array $payload): array
     {
         $status = isset($payload['status']) ? \App\Domain\Tasks\TaskStatus::tryFrom((string) $payload['status']) : null;
-        $handler = new UpdateTaskHandler($this->taskRepository, $this->memberRepository);
+        $handler = new UpdateTaskHandler(
+            $this->taskRepository,
+            $this->memberRepository,
+            $this->categoryRepository,
+            $this->recurrenceTypeRepository
+        );
+
+        // An absent catalog reference keeps the stored one; an explicit null (or "") clears it.
         return $this->serializeTask($handler->handle(new UpdateTaskCommand(
             taskId: $taskId,
             title: (string) ($payload['title'] ?? ''),
@@ -67,10 +85,12 @@ final class TaskController
             status: $status,
             day: $this->optionalValidatedDay($payload['day'] ?? null),
             time: $this->optionalString($payload['time'] ?? null),
-            category: $this->optionalString($payload['category'] ?? null),
-            recurrence: $this->optionalString($payload['recurrence'] ?? null),
+            categoryId: $this->optionalPositiveInt($payload['categoryId'] ?? null),
+            recurrenceId: $this->optionalPositiveInt($payload['recurrenceId'] ?? null),
             priority: $this->optionalValidatedPriority($payload['priority'] ?? null),
-            repeatable: $this->optionalBool($payload['repeatable'] ?? null)
+            repeatable: $this->optionalBool($payload['repeatable'] ?? null),
+            clearCategory: $this->isExplicitlyEmpty($payload, 'categoryId'),
+            clearRecurrence: $this->isExplicitlyEmpty($payload, 'recurrenceId')
         )));
     }
 
@@ -112,11 +132,12 @@ final class TaskController
             $this->taskRepository,
             $this->memberRepository,
             $this->alertRepository,
-            transactionRunner: $this->transactionRunner
+            transactionRunner: $this->transactionRunner,
+            recurrenceTypeRepository: $this->recurrenceTypeRepository
         );
         $tasks = $handler->handle(new AutoAssignTasksCommand($householdId));
 
-        return array_map(fn (Task $task): array => $this->serializeTask($task), $tasks);
+        return $this->serializeTasks($tasks, $householdId);
     }
 
     /**
@@ -127,14 +148,36 @@ final class TaskController
         $handler = new ListTasksHandler($this->taskRepository);
         $tasks = $handler->handle(new ListTasksQuery($householdId));
 
-        return array_map(fn (Task $task): array => $this->serializeTask($task), $tasks);
+        return $this->serializeTasks($tasks, $householdId);
     }
 
     /**
+     * Resolves catalog names with one read per catalog for the whole list.
+     *
+     * @param array<int, Task> $tasks
+     * @return array<int, array<string, mixed>>
+     */
+    private function serializeTasks(array $tasks, string $householdId): array
+    {
+        $catalogs = $this->catalogsOf($householdId);
+
+        return array_map(fn (Task $task): array => $this->serializeTask($task, $catalogs), $tasks);
+    }
+
+    private function catalogsOf(string $householdId): HouseholdCatalogs
+    {
+        return HouseholdCatalogs::load($this->categoryRepository, $this->recurrenceTypeRepository, $householdId);
+    }
+
+    /**
+     * `category` and `recurrence` are read-only names resolved from the catalogs.
+     *
      * @return array<string, mixed>
      */
-    private function serializeTask(Task $task): array
+    private function serializeTask(Task $task, ?HouseholdCatalogs $catalogs = null): array
     {
+        $catalogs ??= $this->catalogsOf($task->householdId());
+
         return [
             'id' => $task->id(),
             'title' => $task->title()->value(),
@@ -145,8 +188,10 @@ final class TaskController
             'assignedMemberId' => $task->assignedMemberId(),
             'day' => $task->day(),
             'time' => $task->time(),
-            'category' => $task->category(),
-            'recurrence' => $task->recurrence(),
+            'categoryId' => $task->categoryId(),
+            'category' => $catalogs->categoryName($task->categoryId()),
+            'recurrenceId' => $task->recurrenceId(),
+            'recurrence' => $catalogs->recurrenceName($task->recurrenceId()),
             'priority' => $task->priority(),
             'lastAssignedAt' => $task->lastAssignedAt()?->format(DATE_ATOM),
             'repeatable' => $task->isRepeatable(),
@@ -171,6 +216,14 @@ final class TaskController
         }
 
         throw new \InvalidArgumentException('repeatable must be a boolean.');
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private function isExplicitlyEmpty(array $payload, string $key): bool
+    {
+        return array_key_exists($key, $payload) && ($payload[$key] === null || $payload[$key] === '');
     }
 
     private function optionalPositiveInt(mixed $value): ?int

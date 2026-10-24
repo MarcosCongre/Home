@@ -18,8 +18,8 @@ class Task
         private ?int $assignedMemberId = null,
         private ?string $day = null,
         private ?string $time = null,
-        private ?string $category = null,
-        private ?string $recurrence = null,
+        private ?int $categoryId = null,
+        private ?int $recurrenceId = null,
         private string $priority = 'med',
         private ?DateTimeImmutable $lastAssignedAt = null,
         private ?DateTimeImmutable $deletedAt = null,
@@ -34,8 +34,8 @@ class Task
         DateTimeImmutable $createdAt,
         ?string $day = null,
         ?string $time = null,
-        ?string $category = null,
-        ?string $recurrence = null,
+        ?int $categoryId = null,
+        ?int $recurrenceId = null,
         ?string $priority = null,
         bool $repeatable = false
     ): self {
@@ -47,8 +47,8 @@ class Task
             createdAt: $createdAt,
             day: $day,
             time: $time,
-            category: $category,
-            recurrence: $recurrence,
+            categoryId: $categoryId,
+            recurrenceId: $recurrenceId,
             priority: $priority ?? 'med',
             repeatable: $repeatable
         );
@@ -94,8 +94,6 @@ class Task
         ?TaskStatus $status = null,
         ?string $day = null,
         ?string $time = null,
-        ?string $category = null,
-        ?string $recurrence = null,
         ?string $priority = null,
         ?bool $repeatable = null
     ): void {
@@ -111,12 +109,6 @@ class Task
         if ($time !== null) {
             $this->time = $time;
         }
-        if ($category !== null) {
-            $this->category = $category;
-        }
-        if ($recurrence !== null) {
-            $this->recurrence = $recurrence;
-        }
         if ($priority !== null) {
             $this->priority = $priority;
         }
@@ -128,6 +120,18 @@ class Task
             $this->status = $status;
             $this->completedAt = $status === TaskStatus::COMPLETED ? new DateTimeImmutable() : null;
         }
+    }
+
+    // Catalog references change on their own so an update can tell "keep" from "clear" (null).
+    public function changeCategory(?int $categoryId): void
+    {
+        $this->categoryId = $categoryId;
+    }
+
+    // A null recurrence makes the task one-off.
+    public function changeRecurrence(?int $recurrenceId): void
+    {
+        $this->recurrenceId = $recurrenceId;
     }
 
     public function reassignTo(int $memberId, DateTimeImmutable $assignedAt): void
@@ -208,14 +212,14 @@ class Task
         return $this->time;
     }
 
-    public function category(): ?string
+    public function categoryId(): ?int
     {
-        return $this->category;
+        return $this->categoryId;
     }
 
-    public function recurrence(): ?string
+    public function recurrenceId(): ?int
     {
-        return $this->recurrence;
+        return $this->recurrenceId;
     }
 
     public function priority(): string

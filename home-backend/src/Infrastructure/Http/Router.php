@@ -36,29 +36,29 @@ final class Router
         }
 
         if ($method === 'POST' && $path === '/tasks') {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
+            $controller = $this->taskController();
             return $controller->create($this->decodeJson($this->body($request)));
         }
 
         if ($this->memberRepository !== null && $method === 'POST' && $path === '/tasks/auto-assign') {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository, $this->transactionRunner);
+            $controller = $this->taskController();
             $payload = $this->decodeJson($this->body($request));
             return $controller->autoAssign((string) ($payload['householdId'] ?? ''));
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
+            $controller = $this->taskController();
             return $controller->update($this->positiveId($matches[1]), $this->decodeJson($this->body($request)));
         }
 
         if ($method === 'DELETE' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
             $id = $this->positiveId($matches[1]);
-            (new TaskController($this->taskRepository, $this->alertRepository))->delete($id);
+            $this->taskController()->delete($id);
             return ['deleted' => true, 'id' => $id];
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/complete$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
+            $controller = $this->taskController();
             $payload = $this->decodeJson($this->body($request));
             return $controller->complete(
                 $this->positiveId($matches[1]),
@@ -68,12 +68,12 @@ final class Router
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/reopen$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = $this->taskController();
             return $controller->reopen($this->positiveId($matches[1]));
         }
 
         if ($method === 'GET' && $path === '/tasks') {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = $this->taskController();
             $householdId = (string) ($request['householdId'] ?? '');
             if ($householdId === '' && isset($request['QUERY_STRING'])) {
                 parse_str((string) $request['QUERY_STRING'], $queryParams);
@@ -182,6 +182,19 @@ final class Router
         }
 
         throw RouteNotFoundException::for($method, $path);
+    }
+
+    // Every task route gets the same collaborators, so responses resolve catalog names consistently.
+    private function taskController(): TaskController
+    {
+        return new TaskController(
+            $this->taskRepository,
+            $this->alertRepository,
+            $this->memberRepository,
+            $this->transactionRunner,
+            $this->categoryRepository,
+            $this->recurrenceTypeRepository
+        );
     }
 
     /** @param array<string, mixed> $request */

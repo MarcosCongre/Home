@@ -6,8 +6,11 @@ namespace App\Application\Tasks\CreateTask;
 
 use App\Application\Tasks\AssigneeGuard\AssigneeGuard;
 use App\Application\Tasks\AssignmentAlert\AssignmentAlertNotifier;
+use App\Application\Tasks\CatalogGuard\CatalogGuard;
 use App\Domain\Alerts\AlertRepositoryInterface;
 use App\Domain\Members\MemberRepositoryInterface;
+use App\Domain\Tasks\Catalog\CategoryRepositoryInterface;
+use App\Domain\Tasks\Catalog\RecurrenceTypeRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use DateTimeImmutable;
@@ -17,13 +20,17 @@ final class CreateTaskHandler
     public function __construct(
         private readonly TaskRepositoryInterface $taskRepository,
         private readonly ?AlertRepositoryInterface $alertRepository = null,
-        private readonly ?MemberRepositoryInterface $memberRepository = null
+        private readonly ?MemberRepositoryInterface $memberRepository = null,
+        private readonly ?CategoryRepositoryInterface $categoryRepository = null,
+        private readonly ?RecurrenceTypeRepositoryInterface $recurrenceTypeRepository = null
     ) {
     }
 
     public function handle(CreateTaskCommand $command): Task
     {
         (new AssigneeGuard($this->memberRepository))->ensureAssignable($command->assignedMemberId, $command->householdId);
+        (new CatalogGuard($this->categoryRepository, $this->recurrenceTypeRepository))
+            ->ensureReferences($command->categoryId, $command->recurrenceId, $command->householdId);
 
         $task = Task::create(
             id: 0,
@@ -32,8 +39,8 @@ final class CreateTaskHandler
             createdAt: new DateTimeImmutable(),
             day: $command->day,
             time: $command->time,
-            category: $command->category,
-            recurrence: $command->recurrence,
+            categoryId: $command->categoryId,
+            recurrenceId: $command->recurrenceId,
             priority: $command->priority,
             repeatable: $command->repeatable
         );
@@ -44,8 +51,6 @@ final class CreateTaskHandler
                 assignedMemberId: $command->assignedMemberId,
                 day: $command->day,
                 time: $command->time,
-                category: $command->category,
-                recurrence: $command->recurrence,
                 priority: $command->priority
             );
         }

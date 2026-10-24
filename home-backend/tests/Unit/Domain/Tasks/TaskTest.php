@@ -28,8 +28,8 @@ final class TaskTest extends TestCase
         $this->assertSame('house-1', $task->householdId());
         $this->assertNull($task->day());
         $this->assertNull($task->time());
-        $this->assertNull($task->category());
-        $this->assertNull($task->recurrence());
+        $this->assertNull($task->categoryId());
+        $this->assertNull($task->recurrenceId());
         $this->assertSame('med', $task->priority());
     }
 
@@ -63,15 +63,12 @@ final class TaskTest extends TestCase
             status: TaskStatus::PENDING,
             day: 'monday',
             time: '18:30',
-            category: 'shopping',
-            recurrence: 'weekly',
             priority: 'high'
         );
 
         $this->assertSame('monday', $task->day());
         $this->assertSame('18:30', $task->time());
-        $this->assertSame('shopping', $task->category());
-        $this->assertSame('weekly', $task->recurrence());
+        $this->assertNull($task->categoryId(), 'Catalog references change only through their own methods.');
         $this->assertSame('high', $task->priority());
         $this->assertSame(42, $task->assignedMemberId());
     }

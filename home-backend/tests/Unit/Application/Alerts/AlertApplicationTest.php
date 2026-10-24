@@ -80,8 +80,6 @@ final class AlertApplicationTest extends TestCase
             assignedMemberId: 11,
             day: null,
             time: null,
-            category: null,
-            recurrence: null,
             priority: null
         );
         $taskRepository->save($task);

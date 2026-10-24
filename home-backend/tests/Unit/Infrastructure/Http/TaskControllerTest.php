@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Tests\Unit\Infrastructure\Http;
 
 use App\Domain\Members\Member;
+use App\Domain\Tasks\Catalog\Category;
+use App\Domain\Tasks\Catalog\RecurrenceType;
 use App\Domain\Tasks\Task;
 use App\Infrastructure\Http\TaskController;
+use App\Infrastructure\Persistence\InMemoryCategoryRepository;
 use App\Infrastructure\Persistence\InMemoryMemberRepository;
+use App\Infrastructure\Persistence\InMemoryRecurrenceTypeRepository;
 use App\Infrastructure\Persistence\InMemoryTaskRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -24,8 +28,6 @@ final class TaskControllerTest extends TestCase
             'userId' => 'user-1',
             'day' => 'Mon',
             'time' => '18:30',
-            'category' => 'housework',
-            'recurrence' => 'weekly',
             'priority' => 'high',
         ]);
 
@@ -34,8 +36,10 @@ final class TaskControllerTest extends TestCase
         $this->assertSame('house-1', $task['householdId']);
         $this->assertSame('Mon', $task['day']);
         $this->assertSame('18:30', $task['time']);
-        $this->assertSame('housework', $task['category']);
-        $this->assertSame('weekly', $task['recurrence']);
+        $this->assertNull($task['categoryId']);
+        $this->assertNull($task['category']);
+        $this->assertNull($task['recurrenceId']);
+        $this->assertNull($task['recurrence']);
         $this->assertSame('high', $task['priority']);
     }
 
@@ -56,15 +60,11 @@ final class TaskControllerTest extends TestCase
             'assignedMemberId' => 4,
             'day' => 'Tue',
             'time' => '19:15',
-            'category' => 'cleaning',
-            'recurrence' => 'monthly',
             'priority' => 'low',
         ]);
 
         $this->assertSame('Tue', $updated['day']);
         $this->assertSame('19:15', $updated['time']);
-        $this->assertSame('cleaning', $updated['category']);
-        $this->assertSame('monthly', $updated['recurrence']);
         $this->assertSame('low', $updated['priority']);
         $this->assertSame(4, $updated['assignedMemberId']);
     }
@@ -129,7 +129,7 @@ final class TaskControllerTest extends TestCase
             title: 'Mop floors',
             householdId: 'house-7',
             createdAt: new \DateTimeImmutable('2026-09-16 09:00:00'),
-            recurrence: 'Weekly'
+            recurrenceId: 1
         ));
         $members = new InMemoryMemberRepository();
         $members->save(Member::create(0, 'Ana', 'A', '#C4963A', 'house-7'));
@@ -201,5 +201,104 @@ final class TaskControllerTest extends TestCase
         $this->assertSame('pending', $completed['status']);
         $this->assertSame(2, $completed['assignedMemberId']);
         $this->assertTrue($completed['repeatable']);
+    }
+
+    public function testItCreatesATaskWithCatalogReferencesAndReturnsTheirNames(): void
+    {
+        [$controller] = $this->catalogFixture();
+
+        $task = $controller->create([
+            'title' => 'Mop floors',
+            'householdId' => 'house-1',
+            'categoryId' => 1,
+            'recurrenceId' => '1',
+        ]);
+
+        $this->assertSame(1, $task['categoryId']);
+        $this->assertSame('Cleaning', $task['category']);
+        $this->assertSame(1, $task['recurrenceId']);
+        $this->assertSame('Weekly', $task['recurrence']);
+    }
+
+    public function testItRejectsACategoryOfAnotherHousehold(): void
+    {
+        [$controller, $tasks] = $this->catalogFixture();
+
+        try {
+            $controller->create(['title' => 'Mop floors', 'householdId' => 'house-1', 'categoryId' => 2]);
+            $this->fail('A foreign category must be rejected.');
+        } catch (\InvalidArgumentException $exception) {
+            $this->assertSame('Category does not exist in this household.', $exception->getMessage());
+        }
+
+        $this->assertSame([], $tasks->findByHouseholdId('house-1'));
+    }
+
+    public function testItRejectsANonIntegerCatalogReference(): void
+    {
+        [$controller] = $this->catalogFixture();
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $controller->create(['title' => 'Mop floors', 'householdId' => 'house-1', 'recurrenceId' => 'weekly']);
+    }
+
+    public function testUpdateKeepsAbsentReferencesAndClearsExplicitNulls(): void
+    {
+        [$controller] = $this->catalogFixture();
+        $created = $controller->create(['title' => 'Mop floors', 'householdId' => 'house-1', 'categoryId' => 1, 'recurrenceId' => 1]);
+
+        $kept = $controller->update($created['id'], ['title' => 'Mop all floors']);
+        $this->assertSame(1, $kept['categoryId']);
+        $this->assertSame(1, $kept['recurrenceId']);
+
+        $cleared = $controller->update($created['id'], ['title' => 'Mop all floors', 'categoryId' => null, 'recurrenceId' => null]);
+        $this->assertNull($cleared['categoryId']);
+        $this->assertNull($cleared['category']);
+        $this->assertNull($cleared['recurrenceId']);
+        $this->assertNull($cleared['recurrence']);
+    }
+
+    public function testListResolvesRenamedEntriesAndDropsTheNameOfDeletedOnes(): void
+    {
+        [$controller, , $categories, $recurrenceTypes] = $this->catalogFixture();
+        $controller->create(['title' => 'Mop floors', 'householdId' => 'house-1', 'categoryId' => 1, 'recurrenceId' => 1]);
+
+        $category = $categories->findById(1);
+        $category?->update('Floors', null, new \DateTimeImmutable());
+        $categories->save($category);
+        $recurrenceType = $recurrenceTypes->findById(1);
+        $recurrenceType?->delete(new \DateTimeImmutable());
+        $recurrenceTypes->save($recurrenceType);
+
+        $listed = $controller->list('house-1');
+
+        $this->assertSame('Floors', $listed[0]['category']);
+        $this->assertSame(1, $listed[0]['recurrenceId'], 'The reference itself is kept.');
+        $this->assertNull($listed[0]['recurrence']);
+    }
+
+    /**
+     * Category 1 and recurrence type 1 belong to house-1; category 2 belongs to house-2.
+     *
+     * @return array{TaskController, InMemoryTaskRepository, InMemoryCategoryRepository, InMemoryRecurrenceTypeRepository}
+     */
+    private function catalogFixture(): array
+    {
+        $now = new \DateTimeImmutable('2026-10-24 10:00:00');
+        $tasks = new InMemoryTaskRepository();
+        $categories = new InMemoryCategoryRepository();
+        $categories->save(Category::create(0, 'house-1', 'Cleaning', '#C4623A', $now));
+        $categories->save(Category::create(0, 'house-2', 'Garden', null, $now));
+        $recurrenceTypes = new InMemoryRecurrenceTypeRepository();
+        $recurrenceTypes->save(RecurrenceType::create(0, 'house-1', 'Weekly', 7, $now));
+
+        $controller = new TaskController(
+            $tasks,
+            categoryRepository: $categories,
+            recurrenceTypeRepository: $recurrenceTypes
+        );
+
+        return [$controller, $tasks, $categories, $recurrenceTypes];
     }
 }

@@ -134,6 +134,33 @@ final class RouterCatalogTest extends TestCase
         $this->get('/recurrence-types', '');
     }
 
+    public function testTaskRoutesReferenceTheHouseholdCatalogs(): void
+    {
+        $category = $this->get('/categories', 'house-1')[0];
+        $recurrence = $this->get('/recurrence-types', 'house-1')[0];
+
+        $created = $this->send('POST', '/tasks', [
+            'title' => 'Mop floors',
+            'householdId' => 'house-1',
+            'categoryId' => $category['id'],
+            'recurrenceId' => $recurrence['id'],
+        ]);
+        $this->assertSame('Cleaning', $created['category']);
+        $this->assertSame('Daily', $created['recurrence']);
+
+        $listed = $this->get('/tasks', 'house-1');
+        $this->assertSame($category['id'], $listed[0]['categoryId']);
+        $this->assertSame('Daily', $listed[0]['recurrence']);
+
+        $updated = $this->send('PATCH', '/tasks/' . $created['id'], ['title' => 'Mop floors', 'recurrenceId' => null]);
+        $this->assertSame('Cleaning', $updated['category']);
+        $this->assertNull($updated['recurrenceId']);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $foreign = $this->get('/categories', 'house-2')[0];
+        $this->send('PATCH', '/tasks/' . $created['id'], ['title' => 'Mop floors', 'categoryId' => $foreign['id']]);
+    }
+
     public function testCatalogRoutesAreUnavailableWithoutRepositories(): void
     {
         $router = new Router(new InMemoryTaskRepository());
