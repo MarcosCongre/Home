@@ -8,7 +8,8 @@ class CompleteTaskCommand
 {
     public function __construct(
         public int $taskId,
-        public string $userId
+        public string $userId,
+        public ?int $nextAssigneeId = null
     ) {
     }
 }

@@ -145,4 +145,61 @@ final class TaskControllerTest extends TestCase
         $listed = $controller->list('house-7');
         $this->assertSame($tasks[0]['lastAssignedAt'], $listed[0]['lastAssignedAt']);
     }
+
+    public function testItCreatesNonRepeatableTasksByDefault(): void
+    {
+        $controller = new TaskController(new InMemoryTaskRepository());
+
+        $task = $controller->create(['title' => 'Clean kitchen', 'householdId' => 'house-1']);
+
+        $this->assertFalse($task['repeatable']);
+    }
+
+    public function testItCreatesAndUpdatesTheRepeatableFlag(): void
+    {
+        $repository = new InMemoryTaskRepository();
+        $controller = new TaskController($repository);
+
+        $created = $controller->create(['title' => 'Feed the cat', 'householdId' => 'house-1', 'repeatable' => true]);
+        $this->assertTrue($created['repeatable']);
+
+        $updated = $controller->update($created['id'], ['title' => 'Feed the cat', 'repeatable' => false]);
+        $this->assertFalse($updated['repeatable']);
+
+        $kept = $controller->update($created['id'], ['title' => 'Feed the cat']);
+        $this->assertFalse($kept['repeatable'], 'Omitting the flag keeps the stored value.');
+    }
+
+    public function testItRejectsANonBooleanRepeatableFlag(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        (new TaskController(new InMemoryTaskRepository()))->create([
+            'title' => 'Feed the cat',
+            'householdId' => 'house-1',
+            'repeatable' => 'often',
+        ]);
+    }
+
+    public function testCompletingARepeatableTaskReassignsItToTheNextMember(): void
+    {
+        $repository = new InMemoryTaskRepository();
+        $members = new InMemoryMemberRepository();
+        $members->save(Member::create(0, 'Ana', 'A', '#C4963A', 'house-1'));
+        $members->save(Member::create(0, 'Bruno', 'B', '#6B7C4E', 'house-1'));
+        $controller = new TaskController($repository, null, $members);
+
+        $created = $controller->create([
+            'title' => 'Feed the cat',
+            'householdId' => 'house-1',
+            'assignedMemberId' => 1,
+            'repeatable' => true,
+        ]);
+
+        $completed = $controller->complete($created['id'], '1', 2);
+
+        $this->assertSame('pending', $completed['status']);
+        $this->assertSame(2, $completed['assignedMemberId']);
+        $this->assertTrue($completed['repeatable']);
+    }
 }

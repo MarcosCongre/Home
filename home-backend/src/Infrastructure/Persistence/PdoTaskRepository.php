@@ -30,7 +30,8 @@ final class PdoTaskRepository implements TaskRepositoryInterface
                     recurrence TEXT NULL,
                     priority TEXT NOT NULL DEFAULT "med",
                     last_assigned_at TEXT NULL,
-                    deleted_at TEXT NULL
+                    deleted_at TEXT NULL,
+                    repeatable INTEGER NOT NULL DEFAULT 0
                 )'
             );
         }
@@ -63,21 +64,22 @@ final class PdoTaskRepository implements TaskRepositoryInterface
                      recurrence = :recurrence,
                      priority = :priority,
                      last_assigned_at = :lastAssignedAt,
-                     deleted_at = :deletedAt
+                     deleted_at = :deletedAt,
+                     repeatable = :repeatable
                  WHERE id = :id'
             );
             $statement->bindValue(':id', $task->id(), PDO::PARAM_INT);
         } else {
             if ($task->id() > 0) {
                 $statement = $this->pdo->prepare(
-                    'INSERT INTO tasks (id, title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at, deleted_at)
-                     VALUES (:id, :title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt, :deletedAt)'
+                    'INSERT INTO tasks (id, title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at, deleted_at, repeatable)
+                     VALUES (:id, :title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt, :deletedAt, :repeatable)'
                 );
                 $statement->bindValue(':id', $task->id(), PDO::PARAM_INT);
             } else {
                 $statement = $this->pdo->prepare(
-                    'INSERT INTO tasks (title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at, deleted_at)
-                     VALUES (:title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt, :deletedAt)'
+                    'INSERT INTO tasks (title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at, deleted_at, repeatable)
+                     VALUES (:title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt, :deletedAt, :repeatable)'
                 );
             }
         }
@@ -98,6 +100,7 @@ final class PdoTaskRepository implements TaskRepositoryInterface
         $statement->bindValue(':lastAssignedAt', $lastAssignedAt === null ? null : DbDateTime::format($lastAssignedAt), $lastAssignedAt === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $deletedAt = $task->deletedAt();
         $statement->bindValue(':deletedAt', $deletedAt === null ? null : DbDateTime::format($deletedAt), $deletedAt === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $statement->bindValue(':repeatable', $task->isRepeatable() ? 1 : 0, PDO::PARAM_INT);
         $statement->execute();
 
         if ($task->id() === 0) {
@@ -164,7 +167,8 @@ final class PdoTaskRepository implements TaskRepositoryInterface
             recurrence: $recurrence,
             priority: $priority,
             lastAssignedAt: $lastAssignedAt === null ? null : new \DateTimeImmutable($lastAssignedAt),
-            deletedAt: $deletedAt === null ? null : new \DateTimeImmutable($deletedAt)
+            deletedAt: $deletedAt === null ? null : new \DateTimeImmutable($deletedAt),
+            repeatable: (bool) ($row['repeatable'] ?? false)
         );
     }
 

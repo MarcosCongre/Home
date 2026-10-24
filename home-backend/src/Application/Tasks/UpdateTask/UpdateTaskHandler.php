@@ -35,7 +35,8 @@ final class UpdateTaskHandler
             time: $command->time,
             category: $command->category,
             recurrence: $command->recurrence,
-            priority: $command->priority
+            priority: $command->priority,
+            repeatable: $command->repeatable
         );
         $this->taskRepository->save($task);
 

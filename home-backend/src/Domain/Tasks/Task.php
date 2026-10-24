@@ -22,7 +22,8 @@ class Task
         private ?string $recurrence = null,
         private string $priority = 'med',
         private ?DateTimeImmutable $lastAssignedAt = null,
-        private ?DateTimeImmutable $deletedAt = null
+        private ?DateTimeImmutable $deletedAt = null,
+        private bool $repeatable = false
     ) {
     }
 
@@ -35,7 +36,8 @@ class Task
         ?string $time = null,
         ?string $category = null,
         ?string $recurrence = null,
-        ?string $priority = null
+        ?string $priority = null,
+        bool $repeatable = false
     ): self {
         return new self(
             id: $id,
@@ -47,18 +49,33 @@ class Task
             time: $time,
             category: $category,
             recurrence: $recurrence,
-            priority: $priority ?? 'med'
+            priority: $priority ?? 'med',
+            repeatable: $repeatable
         );
     }
 
-    public function complete(): void
+    /**
+     * A repeatable task is done several times a day: completing it records the
+     * completion time and hands it back as pending, optionally to the next member.
+     * The next assignee is ignored for non-repeatable tasks.
+     */
+    public function complete(?int $nextAssigneeId = null): void
     {
         if ($this->status === TaskStatus::COMPLETED) {
             throw TaskStateConflict::alreadyCompleted();
         }
 
-        $this->status = TaskStatus::COMPLETED;
-        $this->completedAt = new DateTimeImmutable();
+        $completedAt = new DateTimeImmutable();
+        $this->completedAt = $completedAt;
+
+        if (!$this->repeatable) {
+            $this->status = TaskStatus::COMPLETED;
+            return;
+        }
+
+        if ($nextAssigneeId !== null && $nextAssigneeId !== $this->assignedMemberId) {
+            $this->reassignTo($nextAssigneeId, $completedAt);
+        }
     }
 
     public function reopen(): void
@@ -79,7 +96,8 @@ class Task
         ?string $time = null,
         ?string $category = null,
         ?string $recurrence = null,
-        ?string $priority = null
+        ?string $priority = null,
+        ?bool $repeatable = null
     ): void {
         $this->title = new TaskTitle($title);
         if ($assignedMemberId !== $this->assignedMemberId) {
@@ -101,6 +119,9 @@ class Task
         }
         if ($priority !== null) {
             $this->priority = $priority;
+        }
+        if ($repeatable !== null) {
+            $this->repeatable = $repeatable;
         }
 
         if ($status !== null && $status !== $this->status) {
@@ -200,6 +221,11 @@ class Task
     public function priority(): string
     {
         return $this->priority;
+    }
+
+    public function isRepeatable(): bool
+    {
+        return $this->repeatable;
     }
 
     public function assignGeneratedId(int $id): void

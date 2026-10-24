@@ -54,9 +54,13 @@ final class Router
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/complete$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
             $payload = $this->decodeJson($this->body($request));
-            return $controller->complete($this->positiveId($matches[1]), (string) ($payload['userId'] ?? ''));
+            return $controller->complete(
+                $this->positiveId($matches[1]),
+                (string) ($payload['userId'] ?? ''),
+                $payload['nextAssigneeId'] ?? null
+            );
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)/reopen$#', $path, $matches) === 1) {

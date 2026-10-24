@@ -15,7 +15,8 @@ readonly class CreateTaskCommand
         public ?string $time = null,
         public ?string $category = null,
         public ?string $recurrence = null,
-        public ?string $priority = null
+        public ?string $priority = null,
+        public bool $repeatable = false
     ) {
     }
 }

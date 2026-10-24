@@ -48,6 +48,29 @@ final class RouterTest extends TestCase
         $this->assertNull($tasks->findById($created['id']));
     }
 
+    public function testItForwardsTheNextAssigneeWhenCompletingATask(): void
+    {
+        $members = new InMemoryMemberRepository();
+        $members->save(Member::create(0, 'Ana', 'A', '#C4963A', 'house-1'));
+        $members->save(Member::create(0, 'Bruno', 'B', '#6B7C4E', 'house-1'));
+        $router = new Router(new InMemoryTaskRepository(), $members);
+
+        $created = $router->dispatch([
+            'REQUEST_METHOD' => 'POST',
+            'PATH_INFO' => '/tasks',
+            'php://input' => '{"title":"Feed the cat","householdId":"house-1","assignedMemberId":1,"repeatable":true}'
+        ]);
+
+        $response = $router->dispatch([
+            'REQUEST_METHOD' => 'PATCH',
+            'PATH_INFO' => '/tasks/' . $created['id'] . '/complete',
+            'php://input' => '{"userId":"1","nextAssigneeId":2}'
+        ]);
+
+        $this->assertSame('pending', $response['status']);
+        $this->assertSame(2, $response['assignedMemberId']);
+    }
+
     public function testItRejectsUnknownRoutes(): void
     {
         $router = new Router(new InMemoryTaskRepository());

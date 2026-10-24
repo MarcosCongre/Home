@@ -49,7 +49,8 @@ final class TaskController
             time: $this->optionalString($payload['time'] ?? null),
             category: $this->optionalString($payload['category'] ?? null),
             recurrence: $this->optionalString($payload['recurrence'] ?? null),
-            priority: $this->optionalValidatedPriority($payload['priority'] ?? null)
+            priority: $this->optionalValidatedPriority($payload['priority'] ?? null),
+            repeatable: $this->optionalBool($payload['repeatable'] ?? null) ?? false
         ));
 
         return $this->serializeTask($task);
@@ -68,7 +69,8 @@ final class TaskController
             time: $this->optionalString($payload['time'] ?? null),
             category: $this->optionalString($payload['category'] ?? null),
             recurrence: $this->optionalString($payload['recurrence'] ?? null),
-            priority: $this->optionalValidatedPriority($payload['priority'] ?? null)
+            priority: $this->optionalValidatedPriority($payload['priority'] ?? null),
+            repeatable: $this->optionalBool($payload['repeatable'] ?? null)
         )));
     }
 
@@ -77,12 +79,13 @@ final class TaskController
         (new DeleteTaskHandler($this->taskRepository))->handle($taskId);
     }
 
-    public function complete(int $taskId, string $userId): array
+    public function complete(int $taskId, string $userId, mixed $nextAssigneeId = null): array
     {
-        $handler = new CompleteTaskHandler($this->taskRepository, $this->alertRepository);
+        $handler = new CompleteTaskHandler($this->taskRepository, $this->alertRepository, $this->memberRepository);
         $task = $handler->handle(new CompleteTaskCommand(
             taskId: $taskId,
-            userId: $userId
+            userId: $userId,
+            nextAssigneeId: $this->optionalPositiveInt($nextAssigneeId)
         ));
 
         return $this->serializeTask($task);
@@ -146,7 +149,28 @@ final class TaskController
             'recurrence' => $task->recurrence(),
             'priority' => $task->priority(),
             'lastAssignedAt' => $task->lastAssignedAt()?->format(DATE_ATOM),
+            'repeatable' => $task->isRepeatable(),
         ];
+    }
+
+    /**
+     * Parses an optional JSON boolean. Accepts 0/1 too, matching the stored column.
+     */
+    private function optionalBool(mixed $value): ?bool
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if ($value === 0 || $value === 1) {
+            return $value === 1;
+        }
+
+        throw new \InvalidArgumentException('repeatable must be a boolean.');
     }
 
     private function optionalPositiveInt(mixed $value): ?int

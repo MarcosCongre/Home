@@ -204,4 +204,26 @@ final class PdoTaskRepositoryTest extends TestCase
             date_default_timezone_set($previous);
         }
     }
+
+    public function testItPersistsTheRepeatableFlag(): void
+    {
+        $repository = new PdoTaskRepository(new \PDO('sqlite::memory:'));
+
+        $repository->save(Task::create(
+            id: 200,
+            title: 'Feed the cat',
+            householdId: 'house-11',
+            createdAt: new \DateTimeImmutable('2026-09-16 12:00:00'),
+            repeatable: true
+        ));
+        $repository->save(Task::create(
+            id: 201,
+            title: 'Sort pantry',
+            householdId: 'house-11',
+            createdAt: new \DateTimeImmutable('2026-09-16 13:00:00')
+        ));
+
+        $this->assertTrue($repository->findById(200)->isRepeatable());
+        $this->assertFalse($repository->findById(201)->isRepeatable());
+    }
 }
