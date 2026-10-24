@@ -410,7 +410,7 @@ export function Notifications({ alerts, onDismiss, onDismissAll, users }: {
   )
 }
 
-const PALETTE = [
+export const PALETTE = [
   '#C4623A','#6B7C4E','#9B7DB5','#C4963A',
   '#3A8FB5','#B53A3A','#3A7C8F','#7C5E3A',
   '#5E6FAA','#AA5E8A','#4AAA7C','#AA804A',

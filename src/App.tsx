@@ -1,6 +1,8 @@
 import { useState } from 'react'
 
 import { useAlerts } from '@/application/alerts/useAlerts'
+import { useCategories } from '@/application/catalogs/useCategories'
+import { useRecurrenceTypes } from '@/application/catalogs/useRecurrenceTypes'
 import { useMembers } from '@/application/members/useMembers'
 import { useTasks } from '@/application/tasks/useTasks'
 import {
@@ -10,6 +12,7 @@ import {
   Notifications,
   TaskDetail,
 } from '@/presentation/screens/homeScreens'
+import { SettingsScreen } from '@/presentation/screens/SettingsScreen'
 import { es } from '@/presentation/i18n/es'
 
 const TABS = [
@@ -17,6 +20,7 @@ const TABS = [
   { id: 'calendar', label: es.tabs.calendar, icon: '◫' },
   { id: 'alerts', label: es.tabs.alerts, icon: '◻' },
   { id: 'members', label: es.tabs.members, icon: '◎' },
+  { id: 'settings', label: es.tabs.settings, icon: '⚙' },
 ]
 
 export default function App() {
@@ -38,6 +42,8 @@ export default function App() {
     canAutoAssign,
   } = useTasks()
   const { alerts, dismissAlert, dismissAll, unreadCount } = useAlerts()
+  const categories = useCategories()
+  const recurrenceTypes = useRecurrenceTypes()
   const error = memberError ?? taskError ?? (autoAssignFailed ? es.dashboard.autoAssignFailed : null)
 
   const openDetail = (id: number) => {
@@ -140,6 +146,8 @@ export default function App() {
               onDismiss={dismissAlert}
               onDismissAll={dismissAll}
             />
+          ) : tab === 'settings' ? (
+            <SettingsScreen categories={categories} recurrenceTypes={recurrenceTypes} />
           ) : (
             <Members
               users={users}
@@ -179,7 +187,7 @@ export default function App() {
                 {t.icon}
               </span>
               <span
-                className="text-[11px] font-medium mt-0.5"
+                className="max-w-full truncate px-0.5 text-[11px] font-medium mt-0.5"
                 style={{ color: active ? '#C4623A' : '#6E604E' }}
               >
                 {t.label}

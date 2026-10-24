@@ -1,4 +1,5 @@
 import type { Alert } from '@/domain/alerts/alert'
+import type { Category, RecurrenceType } from '@/domain/catalogs/catalog'
 import type { Member } from '@/domain/members/member'
 import type { Task } from '@/domain/tasks/task'
 
@@ -41,3 +42,15 @@ export const categoryColor: Record<string, string> = {
   Garden: '#6B7C4E', Shopping: '#3A8FB5', Waste: '#7C5E3A',
   Bills: '#B53A3A', Kitchen: '#3A7C8F',
 }
+
+// Demo catalogs, matching the backend's DefaultCatalogs seed.
+const RECURRENCE_INTERVAL_DAYS: Record<string, number> = {
+  Daily: 1, 'Mon & Thu': 3, 'Tue & Fri': 3, Weekly: 7, Biweekly: 14, Monthly: 30,
+}
+
+export const DEMO_CATEGORIES: Category[] = CATEGORIES
+  .filter(name => name !== 'All')
+  .map((name, index) => ({ id: index + 1, householdId: '1', name, color: categoryColor[name] ?? null }))
+
+export const DEMO_RECURRENCE_TYPES: RecurrenceType[] = RECURRENCES
+  .map((name, index) => ({ id: index + 1, householdId: '1', name, intervalDays: RECURRENCE_INTERVAL_DAYS[name] ?? 7 }))
