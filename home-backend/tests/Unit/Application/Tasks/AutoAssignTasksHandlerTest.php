@@ -38,8 +38,9 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $members = $this->membersOf('house-1', 2);
         $alerts = new RecordingAlertRepository();
 
-        $tasks->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 1, lastAssignedAt: '2026-10-11 12:00:00'));
-        $tasks->save($this->task(2, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 2, lastAssignedAt: '2026-10-18 12:00:00'));
+        // Task 1 was completed a week ago and may rotate; task 2 is still pending with its assignee.
+        $tasks->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 1, lastAssignedAt: '2026-10-11 12:00:00', completedAt: '2026-10-12 12:00:00'));
+        $tasks->save($this->task(2, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 2, lastAssignedAt: '2026-10-11 12:00:00'));
         $tasks->save($this->task(3, 'house-2', self::UNRESOLVED_WEEKLY));
 
         $handler = new AutoAssignTasksHandler($tasks, $members, $alerts, new LowestIdTieBreaker());
@@ -130,8 +131,8 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $pdo = new \PDO('sqlite::memory:');
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         $repository = new PdoTaskRepository($pdo);
-        $repository->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 1, lastAssignedAt: '2026-10-01 12:00:00'));
-        $repository->save($this->task(2, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 2, lastAssignedAt: '2026-10-01 12:00:00'));
+        $repository->save($this->task(1, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 1, lastAssignedAt: '2026-10-01 12:00:00', completedAt: '2026-10-02 12:00:00'));
+        $repository->save($this->task(2, 'house-1', self::UNRESOLVED_WEEKLY, assignee: 2, lastAssignedAt: '2026-10-01 12:00:00', completedAt: '2026-10-02 12:00:00'));
         $alerts = new RecordingAlertRepository();
 
         $failingOnSecondSave = new class ($repository) implements TaskRepositoryInterface {
@@ -213,9 +214,11 @@ final class AutoAssignTasksHandlerTest extends TestCase
         $weekly = RecurrenceType::create(0, 'house-1', 'Weekly', 7, $now);
         $recurrenceTypes->save($weekly);
 
-        // Both were assigned two days ago: the daily cycle has ended, the weekly one has not.
+        // Both locked (not completed). Resolved, the daily task weighs 14 and the weekly one 2,
+        // so the new task goes to member 2; unresolved, both would weigh 2 and the tie goes to member 1.
         $tasks->save($this->task(1, 'house-1', $daily->id(), assignee: 1, lastAssignedAt: '2026-10-17 12:00:00'));
-        $tasks->save($this->task(2, 'house-1', $weekly->id(), assignee: 1, lastAssignedAt: '2026-10-17 12:00:00'));
+        $tasks->save($this->task(2, 'house-1', $weekly->id(), assignee: 2, lastAssignedAt: '2026-10-17 12:00:00'));
+        $tasks->save($this->task(3, 'house-1', $weekly->id()));
 
         $handler = new AutoAssignTasksHandler(
             $tasks,
@@ -226,9 +229,10 @@ final class AutoAssignTasksHandlerTest extends TestCase
         );
         $updated = $handler->handle(new AutoAssignTasksCommand('house-1', $now));
 
-        $this->assertSame([1], array_map(static fn (Task $task): int => $task->id(), $updated));
-        $this->assertSame(2, $tasks->findById(1)?->assignedMemberId());
-        $this->assertSame(1, $tasks->findById(2)?->assignedMemberId());
+        $this->assertSame([3], array_map(static fn (Task $task): int => $task->id(), $updated));
+        $this->assertSame(1, $tasks->findById(1)?->assignedMemberId());
+        $this->assertSame(2, $tasks->findById(2)?->assignedMemberId());
+        $this->assertSame(2, $tasks->findById(3)?->assignedMemberId());
     }
 
     public function testItRequiresAHouseholdId(): void
@@ -250,13 +254,20 @@ final class AutoAssignTasksHandlerTest extends TestCase
         return $members;
     }
 
-    private function task(int $id, string $householdId, ?int $recurrenceId, ?int $assignee = null, ?string $lastAssignedAt = null): Task
-    {
+    private function task(
+        int $id,
+        string $householdId,
+        ?int $recurrenceId,
+        ?int $assignee = null,
+        ?string $lastAssignedAt = null,
+        ?string $completedAt = null
+    ): Task {
         return new Task(
             id: $id,
             title: new TaskTitle('Task ' . $id),
             householdId: $householdId,
             createdAt: new DateTimeImmutable('2026-01-01 00:00:0' . $id),
+            completedAt: $completedAt === null ? null : new DateTimeImmutable($completedAt),
             assignedMemberId: $assignee,
             recurrenceId: $recurrenceId,
             lastAssignedAt: $lastAssignedAt === null ? null : new DateTimeImmutable($lastAssignedAt)

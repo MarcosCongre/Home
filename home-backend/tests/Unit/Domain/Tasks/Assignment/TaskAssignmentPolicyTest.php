@@ -58,73 +58,116 @@ final class TaskAssignmentPolicyTest extends TestCase
         $this->assertEqualsWithDelta(14 / 3, TaskAssignmentPolicy::weightOf(3, 'med'), 1e-9);
     }
 
-    /**
-     * @return array<string, array{?int, string, ?string}>
-     */
-    public static function cycles(): array
+    public function testRecurringTaskStaysWithItsAssigneeWhileNotCompletedEvenDaysLater(): void
     {
-        return [
-            'every day is owned for a day' => [1, '2026-10-01 10:00:00', '2026-10-02 10:00:00'],
-            'every 3 days' => [3, '2026-10-01 10:00:00', '2026-10-04 10:00:00'],
-            'every 7 days' => [7, '2026-10-01 10:00:00', '2026-10-08 10:00:00'],
-            'every 14 days' => [14, '2026-10-01 10:00:00', '2026-10-15 10:00:00'],
-            'every 30 days' => [30, '2026-08-15 10:00:00', '2026-09-14 10:00:00'],
-            'one-off has no cycle' => [null, '2026-10-01 10:00:00', null],
-        ];
-    }
-
-    #[DataProvider('cycles')]
-    public function testItEndsTheCycleAfterTheInterval(?int $intervalDays, string $assignedAt, ?string $expected): void
-    {
-        $end = TaskAssignmentPolicy::cycleEnd($intervalDays, new DateTimeImmutable($assignedAt));
-
-        $this->assertSame($expected, $end?->format('Y-m-d H:i:s'));
-    }
-
-    public function testWeeklyTaskAssignedThreeDaysAgoKeepsItsAssignee(): void
-    {
-        $task = $this->task(1, self::WEEKLY, 'med', assignee: 1, lastAssignedAt: '2026-10-16 12:00:00');
+        $task = $this->task(1, self::DAILY, 'med', assignee: 1, lastAssignedAt: '2026-10-01 12:00:00');
 
         $this->assertSame([], $this->assign([$task], [1, 2]));
     }
 
-    public function testWeeklyTaskAssignedEightDaysAgoRotatesToAnotherMember(): void
+    public function testRecurringTaskStaysWithItsAssigneeOnTheCompletionDay(): void
     {
-        $task = $this->task(1, self::WEEKLY, 'med', assignee: 1, lastAssignedAt: '2026-10-11 12:00:00');
+        $task = $this->task(
+            1,
+            self::TWICE_A_WEEK,
+            'med',
+            assignee: 1,
+            lastAssignedAt: '2026-10-16 09:00:00',
+            completedAt: '2026-10-19 08:00:00'
+        );
 
+        $this->assertSame([], $this->assign([$task], [1, 2], new DateTimeImmutable('2026-10-19 23:59:59')));
+    }
+
+    public function testRecurringTaskRotatesFromTheDayAfterCompletion(): void
+    {
+        // Completed on Monday: free to rotate from Tuesday.
+        $task = $this->task(
+            1,
+            self::TWICE_A_WEEK,
+            'med',
+            assignee: 1,
+            lastAssignedAt: '2026-10-16 09:00:00',
+            completedAt: '2026-10-19 21:00:00'
+        );
+
+        $this->assertSame([1 => 2], $this->assign([$task], [1, 2], new DateTimeImmutable('2026-10-20 00:00:00')));
+    }
+
+    public function testCompletionDayFollowsTheClockTimezone(): void
+    {
+        // 02:30 UTC on the 19th is 23:30 on the 18th in Buenos Aires, so the 19th is already the next day there.
+        $task = $this->task(
+            1,
+            self::WEEKLY,
+            'med',
+            assignee: 1,
+            lastAssignedAt: '2026-10-10 09:00:00 America/Argentina/Buenos_Aires',
+            completedAt: '2026-10-19 02:30:00 UTC'
+        );
+        $now = new DateTimeImmutable('2026-10-19 08:00:00 America/Argentina/Buenos_Aires');
+
+        $this->assertSame([1 => 2], $this->assign([$task], [1, 2], $now));
+        $this->assertSame([], $this->assign([$task], [1, 2], $now->setTimezone(new \DateTimeZone('UTC'))));
+    }
+
+    public function testACompletionBeforeTheLastAssignmentDoesNotCount(): void
+    {
+        $task = $this->task(
+            1,
+            self::WEEKLY,
+            'med',
+            assignee: 2,
+            lastAssignedAt: '2026-10-15 12:00:00',
+            completedAt: '2026-10-14 12:00:00'
+        );
+
+        $this->assertSame([], $this->assign([$task], [1, 2]));
+    }
+
+    public function testACompletionAtTheLastAssignmentCounts(): void
+    {
+        $task = $this->task(
+            1,
+            self::WEEKLY,
+            'med',
+            assignee: 2,
+            lastAssignedAt: '2026-10-15 12:00:00',
+            completedAt: '2026-10-15 12:00:00'
+        );
+
+        $this->assertSame([1 => 1], $this->assign([$task], [1, 2]));
+    }
+
+    public function testACompletionWithoutLastAssignmentDateCounts(): void
+    {
+        $task = $this->task(1, self::WEEKLY, 'med', assignee: 2, completedAt: '2026-10-15 12:00:00');
+
+        $this->assertSame([1 => 1], $this->assign([$task], [1, 2]));
+    }
+
+    public function testCompletedNonRepeatableRecurringTaskRotatesFromTheDayAfterCompletion(): void
+    {
+        $task = $this->task(
+            1,
+            self::WEEKLY,
+            'med',
+            status: TaskStatus::COMPLETED,
+            assignee: 1,
+            lastAssignedAt: '2026-10-10 12:00:00',
+            completedAt: '2026-10-18 12:00:00'
+        );
+
+        $this->assertSame([], $this->assign([$task], [1, 2], new DateTimeImmutable('2026-10-18 20:00:00')));
         $this->assertSame([1 => 2], $this->assign([$task], [1, 2]));
     }
 
-    public function testDailyTaskStaysForOneDayAndRotatesAfter(): void
+    public function testARecurrenceMissingFromTheIntervalsIsStillRecurring(): void
     {
-        $recent = $this->task(1, self::DAILY, 'med', assignee: 2, lastAssignedAt: '2026-10-18 13:00:00');
-        $expired = $this->task(2, self::DAILY, 'med', assignee: 2, lastAssignedAt: '2026-10-18 12:00:00');
+        $locked = $this->task(1, 99, 'med', assignee: 1, lastAssignedAt: '2026-09-01 13:00:00');
+        $free = $this->task(2, 99, 'med', assignee: 1, lastAssignedAt: '2026-09-01 11:00:00', completedAt: '2026-10-18 11:00:00');
 
-        $this->assertSame([2 => 1], $this->assign([$recent, $expired], [1, 2]));
-    }
-
-    public function testMonthlyTaskLastsThirtyDays(): void
-    {
-        $task = $this->task(1, self::MONTHLY, 'med', assignee: 1, lastAssignedAt: '2026-08-15 10:00:00');
-
-        $this->assertSame([], $this->assign([$task], [1, 2], new DateTimeImmutable('2026-09-14 09:59:59')));
-        $this->assertSame([1 => 2], $this->assign([$task], [1, 2], new DateTimeImmutable('2026-09-14 10:00:01')));
-    }
-
-    public function testBiweeklyTaskLastsFourteenDays(): void
-    {
-        $task = $this->task(1, self::BIWEEKLY, 'med', assignee: 1, lastAssignedAt: '2026-10-06 12:00:00');
-
-        $this->assertSame([], $this->assign([$task], [1, 2]));
-        $this->assertSame([1 => 2], $this->assign([$task], [1, 2], new DateTimeImmutable('2026-10-20 12:00:01')));
-    }
-
-    public function testARecurrenceMissingFromTheIntervalsIsTreatedAsWeekly(): void
-    {
-        $recent = $this->task(1, 99, 'med', assignee: 1, lastAssignedAt: '2026-10-13 13:00:00');
-        $expired = $this->task(2, 99, 'med', assignee: 1, lastAssignedAt: '2026-10-12 11:00:00');
-
-        $this->assertSame([2 => 2], $this->assign([$recent, $expired], [1, 2]));
+        $this->assertSame([2 => 2], $this->assign([$locked, $free], [1, 2]));
     }
 
     public function testUnassignedTaskGetsAnAssignee(): void
@@ -134,11 +177,11 @@ final class TaskAssignmentPolicyTest extends TestCase
         $this->assertSame([1 => 1], $this->assign([$task], [1, 2]));
     }
 
-    public function testRecurringTaskWithoutLastAssignmentDateIsReassigned(): void
+    public function testRecurringTaskWithoutLastAssignmentDateKeepsItsAssigneeUntilCompleted(): void
     {
         $task = $this->task(1, self::WEEKLY, 'med', assignee: 1);
 
-        $this->assertSame([1 => 2], $this->assign([$task], [1, 2]));
+        $this->assertSame([], $this->assign([$task], [1, 2]));
     }
 
     public function testCompletedOneOffTasksAreUntouched(): void
@@ -159,6 +202,13 @@ final class TaskAssignmentPolicyTest extends TestCase
     public function testAssignedPendingOneOffKeepsItsAssignee(): void
     {
         $task = $this->task(1, null, 'med', assignee: 2, lastAssignedAt: '2026-01-01 00:00:00');
+
+        $this->assertSame([], $this->assign([$task], [1, 2]));
+    }
+
+    public function testAssignedOneOffKeepsItsAssigneeEvenAfterAnOldCompletion(): void
+    {
+        $task = $this->task(1, null, 'med', assignee: 2, lastAssignedAt: '2026-10-01 00:00:00', completedAt: '2026-10-02 00:00:00');
 
         $this->assertSame([], $this->assign([$task], [1, 2]));
     }
@@ -253,7 +303,8 @@ final class TaskAssignmentPolicyTest extends TestCase
         string $priority,
         TaskStatus $status = TaskStatus::PENDING,
         ?int $assignee = null,
-        ?string $lastAssignedAt = null
+        ?string $lastAssignedAt = null,
+        ?string $completedAt = null
     ): Task {
         return new Task(
             id: $id,
@@ -261,6 +312,7 @@ final class TaskAssignmentPolicyTest extends TestCase
             householdId: 'house-1',
             createdAt: new DateTimeImmutable('2026-01-01 00:00:00'),
             status: $status,
+            completedAt: $completedAt === null ? null : new DateTimeImmutable($completedAt),
             assignedMemberId: $assignee,
             recurrenceId: $recurrenceId,
             priority: $priority,

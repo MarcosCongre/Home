@@ -10,11 +10,13 @@ use DateTimeImmutable;
 
 /**
  * Distributes household tasks among members, balancing load by frequency and
- * priority and rotating a recurring task only when its cycle has ended.
+ * priority and rotating a recurring task only after its assignee has completed it.
  *
  * A task's recurrence is "every N days" (its recurrence type's interval): it happens
- * 7/N times a week and its assignee keeps it for N days. A task without a recurrence
- * is one-off: it has no cycle and counts once a week.
+ * 7/N times a week. Its assignee keeps it until they complete it, however long that
+ * takes, and it may rotate from the calendar day after that completion, in the
+ * timezone of the clock passed to assign(). A task without a recurrence is one-off:
+ * it keeps its assignee and counts once a week.
  */
 final class TaskAssignmentPolicy
 {
@@ -45,11 +47,19 @@ final class TaskAssignmentPolicy
     }
 
     /**
-     * Returns when the ownership started at $assignedAt ends, or null for one-off tasks.
+     * Returns from when a recurring task may rotate: the start of the calendar day after
+     * its assignee completed it, in $now's timezone. Null while the current assignment
+     * has not been completed (a completion before the last assignment does not count).
      */
-    public static function cycleEnd(?int $intervalDays, DateTimeImmutable $assignedAt): ?DateTimeImmutable
+    public static function rotatableFrom(Task $task, DateTimeImmutable $now): ?DateTimeImmutable
     {
-        return $intervalDays === null ? null : $assignedAt->modify(sprintf('+%d days', $intervalDays));
+        $completedAt = $task->completedAt();
+        $assignedAt = $task->lastAssignedAt();
+        if ($completedAt === null || ($assignedAt !== null && $completedAt < $assignedAt)) {
+            return null;
+        }
+
+        return $completedAt->setTimezone($now->getTimezone())->modify('tomorrow');
     }
 
     /**
@@ -128,15 +138,15 @@ final class TaskAssignmentPolicy
         return $intervalDays !== null || $task->status() === TaskStatus::PENDING;
     }
 
-    // One-off tasks keep their assignee; recurring ones only until the cycle ends.
+    // One-off tasks keep their assignee; recurring ones until the day after they are completed.
     private static function isLocked(Task $task, ?int $intervalDays, DateTimeImmutable $now): bool
     {
         if ($intervalDays === null) {
             return true;
         }
 
-        $assignedAt = $task->lastAssignedAt();
+        $rotatableFrom = self::rotatableFrom($task, $now);
 
-        return $assignedAt !== null && self::cycleEnd($intervalDays, $assignedAt) > $now;
+        return $rotatableFrom === null || $now < $rotatableFrom;
     }
 }
