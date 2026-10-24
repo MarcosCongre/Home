@@ -120,12 +120,22 @@ export default function App() {
       >
         <div className="h-full w-full max-w-5xl mx-auto bg-[#EDE4D4] md:shadow-sm">
           {detailId && tab === 'detail' ? (
-            <TaskDetail taskId={detailId} tasks={tasks} setTasks={setTasks} onBack={backFromDetail} users={users} />
+            <TaskDetail
+              taskId={detailId}
+              tasks={tasks}
+              onSave={updateTask}
+              onBack={backFromDetail}
+              users={users}
+              categories={categories.items}
+              recurrenceTypes={recurrenceTypes.items}
+            />
           ) : tab === 'home' ? (
             <Dashboard
               tasks={tasks}
               onSelect={openDetail}
               users={users}
+              categories={categories.items}
+              recurrenceTypes={recurrenceTypes.items}
               onToggleComplete={completeTaskById}
               onAutoAssign={canAutoAssign ? autoAssign : undefined}
               isAutoAssigning={isAutoAssigning}
@@ -135,6 +145,8 @@ export default function App() {
               tasks={tasks}
               onSelect={openDetail}
               users={users}
+              categories={categories.items}
+              recurrenceTypes={recurrenceTypes.items}
               onCreateTask={createTask}
               onUpdateTask={updateTask}
               onDeleteTask={deleteTask}
@@ -152,6 +164,8 @@ export default function App() {
             <Members
               users={users}
               tasks={tasks}
+              categories={categories.items}
+              recurrenceTypes={recurrenceTypes.items}
               onAddUser={addUser}
               onUpdateUser={updateUser}
               onRemoveUser={removeUser}

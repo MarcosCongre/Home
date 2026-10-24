@@ -1,20 +1,9 @@
 import { useCallback, useEffect, useReducer } from 'react'
 
-import type { Task } from '@/domain/tasks/task'
+import { taskChanges, type Task, type TaskChanges, type TaskEditableFields } from '@/domain/tasks/task'
 import { INIT_TASKS } from '@/infrastructure/demo/demoData'
 import { environment } from '@/infrastructure/config/environment'
 import { autoAssignTasks as autoAssignTasksRequest, completeTask as completeTaskRequest, createTask as createTaskRequest, deleteTask as deleteTaskRequest, listTasks, reopenTask as reopenTaskRequest, updateTask as updateTaskRequest } from '@/infrastructure/http/taskApi'
-
-type TaskFormInput = {
-  title: string
-  assignee: number | ''
-  day: string
-  time: string
-  category: string
-  recurrence: string
-  priority: Task['priority']
-  repeatable: boolean
-}
 
 type TaskState = {
   tasks: Task[]
@@ -35,6 +24,10 @@ type TaskAction =
   | { type: 'auto-assign-start' }
   | { type: 'auto-assign-success'; tasks: Task[] }
   | { type: 'auto-assign-failure' }
+
+function demoTask(id: number, data: TaskEditableFields): Task {
+  return { id, ...data, category: null, recurrence: null, done: false, history: [] }
+}
 
 const initialState: TaskState = {
   tasks: environment.demoMode ? INIT_TASKS : [],
@@ -152,8 +145,11 @@ export function useTasks() {
   }, [])
 
   const createTask = useCallback(
-    async (data: TaskFormInput) => {
-      const created = await createTaskRequest(data)
+    async (data: TaskEditableFields) => {
+      // Demo mode has no backend: the task lives in memory until reload.
+      const created = environment.demoMode
+        ? demoTask(Math.max(0, ...state.tasks.map(task => task.id)) + 1, data)
+        : await createTaskRequest(data)
       const taskWithFormData = {
         ...created,
         ...data,
@@ -167,17 +163,25 @@ export function useTasks() {
     }, [state.tasks]
   )
 
+  // Sends only the fields that differ from the stored task, so an unchanged
+  // (possibly dangling) catalog id is never re-sent.
   const updateTaskRequestById = useCallback(
-    async (
-      taskId: number,
-      data: TaskFormInput & { status?: 'pending' | 'completed' }
-    ) => {
-    const updated = await updateTaskRequest(taskId, data)
-    dispatch({
-      type: 'replace-task',
-      task: { ...updated, ...data, assignee: data.assignee },
-    })
-  }, [])
+    async (taskId: number, edited: TaskChanges) => {
+      const original = state.tasks.find(task => task.id === taskId)
+      if (!original) return
+
+      const changes = taskChanges(original, edited)
+      if (Object.keys(changes).length === 0) return
+
+      const updated = environment.demoMode
+        ? original
+        : await updateTaskRequest(taskId, changes)
+      dispatch({
+        type: 'replace-task',
+        task: { ...updated, ...changes },
+      })
+    }, [state.tasks]
+  )
 
   const deleteTask = useCallback(async (taskId: number) => {
     await deleteTaskRequest(taskId)

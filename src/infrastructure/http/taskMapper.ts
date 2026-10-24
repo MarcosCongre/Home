@@ -10,6 +10,9 @@ export type TaskDto = {
   lastAssignedAt?: string | null
   assignedMemberId?: number | null
   assignee?: number | null
+  categoryId?: number | null
+  recurrenceId?: number | null
+  // Read-only names the backend resolved for the ids.
   category?: string | null
   recurrence?: string | null
   day?: string | null
@@ -28,8 +31,10 @@ export function mapTaskDto(dto: TaskDto): Task {
     id: dto.id,
     title: dto.title,
     assignee: dto.assignee ?? dto.assignedMemberId ?? '',
-    category: dto.category ?? 'Uncategorized',
-    recurrence: dto.recurrence ?? 'Once',
+    categoryId: catalogId(dto.categoryId),
+    recurrenceId: catalogId(dto.recurrenceId),
+    category: dto.category ?? null,
+    recurrence: dto.recurrence ?? null,
     done: dto.status === 'completed',
     day: dto.day ?? undefined,
     time: dto.time ?? undefined,
@@ -37,4 +42,8 @@ export function mapTaskDto(dto: TaskDto): Task {
     history: dto.history ?? [],
     repeatable: dto.repeatable ?? false,
   }
+}
+
+function catalogId(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null
 }

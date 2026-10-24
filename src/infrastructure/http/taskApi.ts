@@ -1,7 +1,7 @@
 import { environment } from '@/infrastructure/config/environment'
 import { request } from '@/infrastructure/http/apiClient'
 import { mapTaskDto, type TaskDto } from '@/infrastructure/http/taskMapper'
-import type { Task } from '@/domain/tasks/task'
+import type { Task, TaskChanges, TaskEditableFields } from '@/domain/tasks/task'
 
 export async function listTasks(): Promise<Task[]> {
   const payload = await request<TaskDto[]>(`${environment.apiBaseUrl}/tasks?householdId=${encodeURIComponent(environment.householdId)}`)
@@ -35,18 +35,7 @@ export async function autoAssignTasks(): Promise<Task[]> {
   return payload.map(mapTaskDto)
 }
 
-export async function createTask(
-  data: {
-    title: string;
-    assignee?: number | '';
-    day?: string;
-    time?: string;
-    category?: string;
-    recurrence?: string;
-    priority?: string;
-    repeatable?: boolean;
-  }
-): Promise<Task> {
+export async function createTask(data: TaskEditableFields): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks`, {
     method: 'POST',
     body: JSON.stringify({
@@ -55,41 +44,36 @@ export async function createTask(
       assignedMemberId: data.assignee || null,
       day: data.day,
       time: data.time,
-      category: data.category,
-      recurrence: data.recurrence,
+      categoryId: data.categoryId,
+      recurrenceId: data.recurrenceId,
       priority: data.priority,
-      repeatable: data.repeatable ?? false
+      repeatable: data.repeatable
     }),
   })
 
   return mapTaskDto(payload)
 }
 
+// PATCH semantics: an absent field keeps its stored value. Callers pass only
+// what changed (see taskChanges); an explicit null clears a catalog reference.
 export async function updateTask(
   taskId: number,
-  data: {
-    title?: string;
-    assignee?: number | '';
-    status?: TaskDto['status'];
-    day?: string;
-    time?: string;
-    category?: string;
-    recurrence?: string;
-    priority?: string;
-    repeatable?: boolean;
-  }
+  changes: TaskChanges & { status?: TaskDto['status'] }
 ): Promise<Task> {
+  const body: Record<string, unknown> = {}
+  if (changes.title !== undefined) body.title = changes.title
+  if (changes.assignee !== undefined) body.assignedMemberId = changes.assignee || null
+  if (changes.status !== undefined) body.status = changes.status
+  if (changes.day !== undefined) body.day = changes.day
+  if (changes.time !== undefined) body.time = changes.time
+  if (changes.categoryId !== undefined) body.categoryId = changes.categoryId
+  if (changes.recurrenceId !== undefined) body.recurrenceId = changes.recurrenceId
+  if (changes.priority !== undefined) body.priority = changes.priority
+  if (changes.repeatable !== undefined) body.repeatable = changes.repeatable
+
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}`, {
     method: 'PATCH',
-    body: JSON.stringify({
-      ...data,
-      assignedMemberId: data.assignee || null,
-      day: data.day,
-      time: data.time,
-      category: data.category,
-      recurrence: data.recurrence,
-      priority: data.priority
-    }),
+    body: JSON.stringify(body),
   })
 
   return mapTaskDto(payload)

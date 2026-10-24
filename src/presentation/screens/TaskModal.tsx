@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import type { Task } from '@/domain/tasks/task'
+import type { Category, RecurrenceType } from '@/domain/catalogs/catalog'
+import type { Task, TaskEditableFields } from '@/domain/tasks/task'
 import type { Member as User } from '@/domain/members/member'
 import { Avatar } from '@/presentation/shared/Avatar'
 import { ConfirmDialog } from '@/presentation/shared/ConfirmDialog'
-import { CATEGORIES, DAYS, RECURRENCES } from '@/infrastructure/demo/demoData'
+import { DAYS } from '@/infrastructure/demo/demoData'
 import {
   categoryLabel,
   dayLabel,
@@ -14,21 +15,18 @@ import {
 
 const priorityColors = { low: '#6B7C4E', med: '#C4963A', high: '#C4623A' }
 
-export type TaskFormData = {
-  title: string
-  assignee: number | ''
-  day: string
-  time: string
-  category: string
-  recurrence: string
-  priority: Task['priority']
-  repeatable: boolean
-}
+export type TaskFormData = TaskEditableFields
+
+const chipStyle = (selected: boolean) => selected
+  ? { background: '#3D2E1E', color: '#F6EFE3' }
+  : { background: '#fff', color: '#6E604E' }
 
 export function TaskModal({
   initial,
   defaultDay = 'Mon',
   users,
+  categories,
+  recurrenceTypes,
   onSave,
   onDelete,
   onClose,
@@ -36,6 +34,8 @@ export function TaskModal({
   initial?: Task
   defaultDay?: string
   users: User[]
+  categories: Category[]
+  recurrenceTypes: RecurrenceType[]
   onSave: (data: TaskFormData) => void
   // Only offered when editing an existing task. Rejects when the delete fails.
   onDelete?: () => Promise<void>
@@ -45,13 +45,18 @@ export function TaskModal({
   const [activeDay, setActiveDay] = useState(initial?.day ?? defaultDay)
   const [time, setTime] = useState(initial?.time ?? '')
   const [assignee, setAssignee] = useState<number | ''>(initial?.assignee ?? '')
-  const [recurrence, setRecurrence] = useState(initial?.recurrence ?? 'none')
+  // A new task starts as one-off with no category.
+  const [recurrenceId, setRecurrenceId] = useState<number | null>(initial?.recurrenceId ?? null)
   const [priority, setPriority] = useState<Task['priority']>(initial?.priority ?? 'med')
-  const [category, setCategory] = useState(initial?.category ?? CATEGORIES[0])
+  const [categoryId, setCategoryId] = useState<number | null>(initial?.categoryId ?? null)
   const [repeatable, setRepeatable] = useState(initial?.repeatable ?? false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  // A dangling id (deleted entry) shows as "none"; it is only sent if changed.
+  const noCategory = !categories.some(c => c.id === categoryId)
+  const once = !recurrenceTypes.some(r => r.id === recurrenceId)
 
   const confirmDelete = async () => {
     if (!onDelete || deleting) return
@@ -138,16 +143,21 @@ export function TaskModal({
         <div className="mt-4">
             <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.category}</label>
             <div className="grid grid-cols-3 gap-2">
-            {CATEGORIES.map(r => (
+            <button
+                onClick={() => setCategoryId(null)}
+                className="min-h-11 py-2 px-1 rounded-xl text-xs font-medium transition-all"
+                style={chipStyle(noCategory)}
+            >
+                {es.catalogs.noCategory}
+            </button>
+            {categories.map(c => (
                 <button
-                key={r}
-                onClick={() => setCategory(r)}
-                className="min-h-11 py-2 rounded-xl text-xs font-medium transition-all"
-                style={category === r
-                    ? { background: '#3D2E1E', color: '#F6EFE3' }
-                    : { background: '#fff', color: '#6E604E' }}
+                key={c.id}
+                onClick={() => setCategoryId(c.id)}
+                className="min-h-11 py-2 px-1 rounded-xl text-xs font-medium transition-all break-words"
+                style={chipStyle(categoryId === c.id)}
                 >
-                {categoryLabel(r)}
+                {categoryLabel(c.name)}
                 </button>
             ))}
             </div>
@@ -156,16 +166,21 @@ export function TaskModal({
         <div className="mt-4">
             <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.recurrence}</label>
             <div className="grid grid-cols-3 gap-2">
-            {RECURRENCES.map(r => (
+            <button
+                onClick={() => setRecurrenceId(null)}
+                className="min-h-11 py-2 px-1 rounded-xl text-xs font-medium transition-all"
+                style={chipStyle(once)}
+            >
+                {es.catalogs.once}
+            </button>
+            {recurrenceTypes.map(r => (
                 <button
-                key={r}
-                onClick={() => setRecurrence(r)}
-                className="min-h-11 py-2 rounded-xl text-xs font-medium transition-all"
-                style={recurrence === r
-                    ? { background: '#3D2E1E', color: '#F6EFE3' }
-                    : { background: '#fff', color: '#6E604E' }}
+                key={r.id}
+                onClick={() => setRecurrenceId(r.id)}
+                className="min-h-11 py-2 px-1 rounded-xl text-xs font-medium transition-all break-words"
+                style={chipStyle(recurrenceId === r.id)}
                 >
-                {recurrenceLabel(r)}
+                {recurrenceLabel(r.name)}
                 </button>
             ))}
             </div>
@@ -224,8 +239,8 @@ export function TaskModal({
               assignee,
               day: activeDay,
               time,
-              category,
-              recurrence,
+              categoryId,
+              recurrenceId,
               priority,
               repeatable,
             })}

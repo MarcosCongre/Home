@@ -1,14 +1,15 @@
 import { useId, useState } from 'react'
 
 import type { Alert } from '@/domain/alerts/alert'
+import type { Category, RecurrenceType } from '@/domain/catalogs/catalog'
 import type { Member as User } from '@/domain/members/member'
-import type { Task } from '@/domain/tasks/task'
+import type { Task, TaskChanges } from '@/domain/tasks/task'
+import { DAYS } from '@/infrastructure/demo/demoData'
 import {
-  CATEGORIES,
-  DAYS,
-  RECURRENCES,
-  categoryColor,
-} from '@/infrastructure/demo/demoData'
+  taskCategoryColor,
+  taskCategoryText,
+  taskRecurrenceText,
+} from '@/presentation/components/taskCatalogDisplay'
 import { Avatar } from '@/presentation/shared/Avatar'
 import { Badge } from '@/presentation/shared/Badge'
 import { ConfirmDialog } from '@/presentation/shared/ConfirmDialog'
@@ -21,21 +22,29 @@ import {
   recurrenceLabel,
 } from '@/presentation/i18n/es'
 
-export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssign, isAutoAssigning = false }: {
+export function Dashboard({ tasks, onSelect, users, categories, recurrenceTypes, onToggleComplete, onAutoAssign, isAutoAssigning = false }: {
   tasks: Task[]
   onSelect: (id: number) => void
   users: User[]
+  categories: Category[]
+  recurrenceTypes: RecurrenceType[]
   onToggleComplete: (taskId: number, userId: number, nextAssigneeId?: number) => Promise<void>
   onAutoAssign?: () => Promise<void>
   isAutoAssigning?: boolean
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
-  const [filter, setFilter] = useState('All')
+  // 'All' is a UI-only sentinel; otherwise a household category id.
+  const [filter, setFilter] = useState<'All' | number>('All')
   // A repeatable task being completed waits here until the next member is chosen.
   const [handOff, setHandOff] = useState<{ task: Task; next: number | '' } | null>(null)
   const done = tasks.filter(t => t.done).length
   const completionPct = tasks.length ? Math.round((done / tasks.length) * 100) : 0
-  const visible = filter === 'All' ? tasks : tasks.filter(t => t.category === filter)
+  // A filter whose category was deleted falls back to showing everything.
+  const activeFilter = categories.some(c => c.id === filter) ? filter : 'All'
+  const visible = activeFilter === 'All' ? tasks : tasks.filter(t => t.categoryId === activeFilter)
+  const filterChipStyle = (selected: boolean) => selected
+    ? { background: '#3D2E1E', color: '#F6EFE3' }
+    : { background: '#EDE4D4', color: '#6E604E' }
 
   return (
     <div className="flex flex-col h-full">
@@ -74,16 +83,21 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
       </div>
 
       <div className="flex gap-2 px-5 py-3 md:px-8 md:flex-wrap overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
-        {CATEGORIES.slice(0, 7).map(cat => (
+        <button
+          onClick={() => setFilter('All')}
+          className="shrink-0 min-h-11 text-xs font-medium px-4 py-1.5 rounded-full transition-all"
+          style={filterChipStyle(activeFilter === 'All')}
+        >
+          {categoryLabel('All')}
+        </button>
+        {categories.map(cat => (
           <button
-            key={cat}
-            onClick={() => setFilter(cat)}
-            className="shrink-0 min-h-11 text-xs font-medium px-4 py-1.5 rounded-full transition-all"
-            style={filter === cat
-              ? { background: '#3D2E1E', color: '#F6EFE3' }
-              : { background: '#EDE4D4', color: '#6E604E' }}
+            key={cat.id}
+            onClick={() => setFilter(cat.id)}
+            className="shrink-0 min-h-11 max-w-[60vw] truncate text-xs font-medium px-4 py-1.5 rounded-full transition-all"
+            style={filterChipStyle(activeFilter === cat.id)}
           >
-            {categoryLabel(cat)}
+            {categoryLabel(cat.name)}
           </button>
         ))}
       </div>
@@ -91,7 +105,7 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
       <div className="flex-1 overflow-y-auto px-5 pb-4 md:px-8 flex flex-col gap-2 md:grid md:grid-cols-2 md:gap-3 md:content-start xl:grid-cols-3">
         {visible.map(task => {
           const user = userOf(task.assignee)
-          const catColor = categoryColor[task.category] ?? '#888'
+          const catColor = taskCategoryColor(task, categories)
           return (
             <div
               key={task.id}
@@ -121,8 +135,8 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
                   {task.title}
                 </p>
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                  <Badge label={categoryLabel(task.category)} color={catColor} />
-                  <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
+                  <Badge label={taskCategoryText(task, categories)} color={catColor} />
+                  <Badge label={taskRecurrenceText(task, recurrenceTypes)} color="#6E604E" />
                   {task.repeatable && <Badge label={es.repeatable.badge} color="#6B7C4E" />}
                   {task.time && task.time !== '—' && (
                     <span className="text-[11px] text-[#6E604E]">· {task.time}</span>
@@ -171,9 +185,11 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
   )
 }
 
-export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, onUpdateTask, onDeleteTask }: {
+export function CalendarView({ tasks, users, categories, recurrenceTypes, onSelect: _onSelect, onCreateTask, onUpdateTask, onDeleteTask }: {
   tasks: Task[]
   users: User[]
+  categories: Category[]
+  recurrenceTypes: RecurrenceType[]
   onSelect: (id: number) => void
   onCreateTask: (data: TaskFormData) => Promise<void>
   onUpdateTask: (id: number, data: TaskFormData) => Promise<void>
@@ -255,7 +271,7 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
         )}
         {dayTasks.map(task => {
           const user = userOf(task.assignee)
-          const catColor = categoryColor[task.category] ?? '#888'
+          const catColor = taskCategoryColor(task, categories)
           return (
             <button
               key={task.id}
@@ -268,8 +284,8 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
                   <div className="min-w-0">
                     <p className={`text-sm font-medium ${task.done ? 'line-through text-[#6E604E]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
                     <div className="flex flex-wrap gap-1.5 mt-1">
-                      <Badge label={categoryLabel(task.category)} color={catColor} />
-                      <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
+                      <Badge label={taskCategoryText(task, categories)} color={catColor} />
+                      <Badge label={taskRecurrenceText(task, recurrenceTypes)} color="#6E604E" />
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1.5 ml-3">
@@ -289,6 +305,8 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
           initial={taskModal === 'add' ? undefined : taskModal}
           defaultDay={activeDay === 'All' ? DAYS[0] : activeDay}
           users={users}
+          categories={categories}
+          recurrenceTypes={recurrenceTypes}
           onClose={() => setTaskModal(null)}
           onDelete={taskModal === 'add' ? undefined : async () => {
             await onDeleteTask(taskModal.id)
@@ -500,23 +518,41 @@ export function MemberModal({
   )
 }
 
-export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
+export function TaskDetail({ taskId, tasks, onSave, onBack, users, categories, recurrenceTypes }: {
   taskId: number
   tasks: Task[]
-  setTasks: (t: Task[]) => void
+  // Receives the edited fields; only the ones that changed are sent.
+  onSave: (taskId: number, changes: TaskChanges) => Promise<void>
   onBack: () => void
   users: User[]
+  categories: Category[]
+  recurrenceTypes: RecurrenceType[]
 }) {
   const task = tasks.find(t => t.id === taskId)!
   const [title, setTitle] = useState(task.title)
   const [assignee, setAssignee] = useState(task.assignee)
-  const [recurrence, setRecurrence] = useState(task.recurrence)
+  const [recurrenceId, setRecurrenceId] = useState(task.recurrenceId)
   const [priority, setPriority] = useState(task.priority)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  // A dangling recurrence id shows as "Una vez"; it is only sent if changed.
+  const once = !recurrenceTypes.some(r => r.id === recurrenceId)
 
-  const save = () => {
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, title, assignee, recurrence, priority } : t))
-    onBack()
+  const save = async () => {
+    if (saving) return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await onSave(taskId, { title, assignee, recurrenceId, priority })
+      onBack()
+    } catch {
+      setSaveError(es.taskDetail.saveFailed)
+      setSaving(false)
+    }
   }
+  const recurrenceChipStyle = (selected: boolean) => selected
+    ? { background: '#3D2E1E', color: '#F6EFE3' }
+    : { background: '#fff', color: '#6E604E' }
 
   const priorityColors = { low: '#6B7C4E', med: '#C4963A', high: '#C4623A' }
 
@@ -529,9 +565,9 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         <div className="flex items-center gap-2">
           <span
             className="w-2.5 h-2.5 rounded-full"
-            style={{ background: categoryColor[task.category] ?? '#888' }}
+            style={{ background: taskCategoryColor(task, categories) }}
           />
-          <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest">{categoryLabel(task.category)}</p>
+          <p className="text-xs text-[#6E604E] font-medium uppercase tracking-widest">{taskCategoryText(task, categories)}</p>
         </div>
         <h2 className="font-display text-2xl text-[#3D2E1E] mt-1 leading-snug">{task.title}</h2>
       </div>
@@ -568,16 +604,21 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         <div>
           <label className="text-[11px] font-semibold uppercase tracking-widest text-[#6E604E] block mb-1.5">{es.fields.recurrence}</label>
           <div className="grid grid-cols-3 gap-2">
-            {RECURRENCES.map(r => (
+            <button
+              onClick={() => setRecurrenceId(null)}
+              className="min-h-11 py-2 px-1 rounded-xl text-xs font-medium transition-all"
+              style={recurrenceChipStyle(once)}
+            >
+              {es.catalogs.once}
+            </button>
+            {recurrenceTypes.map(r => (
               <button
-                key={r}
-                onClick={() => setRecurrence(r)}
-                className="min-h-11 py-2 rounded-xl text-xs font-medium transition-all"
-                style={recurrence === r
-                  ? { background: '#3D2E1E', color: '#F6EFE3' }
-                  : { background: '#fff', color: '#6E604E' }}
+                key={r.id}
+                onClick={() => setRecurrenceId(r.id)}
+                className="min-h-11 py-2 px-1 rounded-xl text-xs font-medium transition-all break-words"
+                style={recurrenceChipStyle(recurrenceId === r.id)}
               >
-                {recurrenceLabel(r)}
+                {recurrenceLabel(r.name)}
               </button>
             ))}
           </div>
@@ -621,21 +662,28 @@ export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
         </div>
       </div>
 
-      <div className="px-5 pb-8 pt-2 md:px-8 md:flex md:justify-end">
+      <div className="px-5 pb-8 pt-2 md:px-8 md:flex md:items-center md:justify-end md:gap-4">
+        {saveError && (
+          <p role="alert" className="text-xs text-[#B53A3A] mb-2 md:mb-0">{saveError}</p>
+        )}
         <button
-          onClick={save}
-          className="w-full md:w-auto md:px-10 py-3.5 rounded-2xl bg-[#C4623A] text-white text-sm font-semibold tracking-wide"
+          onClick={() => void save()}
+          disabled={saving}
+          aria-busy={saving}
+          className="w-full md:w-auto md:px-10 py-3.5 rounded-2xl bg-[#C4623A] text-white text-sm font-semibold tracking-wide transition-opacity disabled:opacity-60"
         >
-          {es.common.saveChanges}
+          {saving ? es.taskDetail.saving : es.common.saveChanges}
         </button>
       </div>
     </div>
   )
 }
 
-export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, onUnassignTasks }: {
+export function Members({ users, tasks, categories, recurrenceTypes, onAddUser, onUpdateUser, onRemoveUser, onUnassignTasks }: {
   users: User[]
   tasks: Task[]
+  categories: Category[]
+  recurrenceTypes: RecurrenceType[]
   onAddUser: (u: User) => void
   onUpdateUser: (userId: number, data: Omit<User, 'id'>) => void
   onRemoveUser: (userId: number) => Promise<void>
@@ -808,8 +856,8 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium ${task.done ? 'line-through text-[#6E604E]' : 'text-[#3D2E1E]'}`}>{task.title}</p>
                   <div className="flex flex-wrap gap-1.5 mt-0.5">
-                    <Badge label={categoryLabel(task.category)} color={categoryColor[task.category] ?? '#888'} />
-                    <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
+                    <Badge label={taskCategoryText(task, categories)} color={taskCategoryColor(task, categories)} />
+                    <Badge label={taskRecurrenceText(task, recurrenceTypes)} color="#6E604E" />
                   </div>
                 </div>
               </div>

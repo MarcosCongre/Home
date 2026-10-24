@@ -28,7 +28,6 @@ export const CATEGORY_LABELS: LabelMap = {
   Waste: 'Residuos',
   Bills: 'Facturas',
   Kitchen: 'Cocina',
-  Uncategorized: 'Sin categoría',
 }
 
 export const RECURRENCE_LABELS: LabelMap = {
@@ -38,8 +37,6 @@ export const RECURRENCE_LABELS: LabelMap = {
   'Mon & Thu': 'Lun y Jue',
   'Tue & Fri': 'Mar y Vie',
   Monthly: 'Mensual',
-  Once: 'Una vez',
-  none: 'Sin repetición',
 }
 
 export const PRIORITY_LABELS: LabelMap = {
@@ -72,6 +69,10 @@ export const es = {
     alerts: 'Alertas',
     members: 'Miembros',
     settings: 'Configuración',
+  },
+  catalogs: {
+    noCategory: 'Sin categoría',
+    once: 'Una vez',
   },
   fields: {
     taskName: 'Nombre de la tarea',
@@ -128,6 +129,8 @@ export const es = {
     completionHistory: 'Historial de cumplimiento',
     noHistory: 'Aún no hay historial',
     completedOn: (date: string) => `Completada el ${date}`,
+    saving: 'Guardando…',
+    saveFailed: 'No se pudieron guardar los cambios. Intenta de nuevo.',
   },
   members: {
     household: 'Hogar',
