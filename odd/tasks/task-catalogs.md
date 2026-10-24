@@ -1,6 +1,6 @@
 # Feature: task-catalogs
 
-**Status:** T1 done, T2 next
+**Status:** T1–T2 done, T3 next
 **Branch:** `feat/task-catalogs` (stacked on `feat/repeatable-tasks`)
 
 ## Objective
@@ -26,7 +26,12 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
   - Summary: domain in `src/Domain/Tasks/Catalog` (entities, `CatalogName` rules, `DefaultCatalogs`, `CatalogEntryNotFoundException`); handlers in `src/Application/Catalog`; Pdo (SQLite self-schema, SELECT-then-UPDATE/INSERT) and InMemory repositories; `CategoryController`/`RecurrenceTypeController`; routes `GET|POST /categories`, `PATCH|DELETE /categories/{id}` and the same for `/recurrence-types`. PATCH/DELETE take `householdId` from the query string or JSON body (missing → 400). Not found (unknown, deleted, other household) maps to 404 in `public/index.php`; duplicates and validation errors are 400. The List handlers seed defaults inside a transaction when the household has zero rows, soft-deleted included. Migration `006_create_task_catalogs.sql` adds both tables.
   - Review: assessed `high` (`high_risk`) vs `acb86d2`; consent granted; 4-lens review approved and acknowledged (`review-f0cd7520bae2ca09`). Reviewed boundary is now `cfdbe60`. A whole-stack review (from `bcf3255`, 87 files) was also granted but stopped with `lens_context_budget_exceeded`; the stack is already covered by `review-bab5102a7efbdcc9` (req1+req2) plus this T1 review.
   - Advisory follow-ups (non-blocking): `householdId` is client-asserted like members (no auth binding); GET list seeds any household id; update handlers mutate the entity before the duplicate check (InMemory keeps the mutation on reject); household id is not trimmed/bounded consistently; "Mon & Thu"/"Tue & Fri" as every 3 days is an approximation.
-- [ ] T2 — Backend tasks use catalogs: tasks reference `categoryId`/`recurrenceId`, validated against the household (unknown, deleted or foreign → 400); backfill existing string values; `TaskAssignmentPolicy` uses `intervalDays`.
+- [x] T2 — Backend tasks use catalogs: tasks reference `categoryId`/`recurrenceId`, validated against the household (unknown, deleted or foreign → 400); backfill existing string values; `TaskAssignmentPolicy` uses `intervalDays`.
+  - Route: delegated (writer). Trigger: 2+ non-trivial files across domain, application, infrastructure and a migration.
+  - Commit: `3031265` (+1052/−255 including tests; one commit because the policy reads `Task::recurrenceId()`, so it is not cleanly separable).
+  - Summary: `Task` holds `?int categoryId`/`recurrenceId` (the string fields are gone from domain, commands, handlers and repositories); `changeCategory()`/`changeRecurrence()` set them. `CatalogGuard` (like `AssigneeGuard`) rejects an unknown, soft-deleted or other-household entry with `InvalidArgumentException` (400) before anything changes; with no catalog repository wired, a non-null reference is rejected rather than trusted. PATCH: an absent `categoryId`/`recurrenceId` keeps the value, an explicit `null` or `""` clears it (`UpdateTaskCommand::clearCategory`/`clearRecurrence`). Responses return `categoryId`, `recurrenceId` and read-only `category`/`recurrence` names, resolved by `HouseholdCatalogs` with one read per catalog per request (no N+1). `TaskAssignmentPolicy::assign()` takes a `recurrenceId → intervalDays` map (built by `AutoAssignTasksHandler` from the household's recurrence types): weight = (7/N) × priority, cycle = +N days, null = one-off exactly as before; `FREQUENCIES`, `normalize()` and the calendar-month logic are removed. `Router` builds every `TaskController` with all repositories. SQLite schema has `category_id`/`recurrence_id` (an existing table gains them via `ALTER`); the legacy string columns are no longer written. Migration `007_task_catalog_refs.sql`.
+  - Behavior changes (D2/D4): "Daily" keeps its assignee 1 day instead of 7; "Monthly" is 30 days instead of a calendar month; "Mon & Thu"/"Tue & Fri" (3 days) cycle in 3 days instead of 7 and weigh 7/3 instead of 2 per week; "Monthly" weighs 7/30 instead of 0.25. Weekly (7) and Biweekly (14) are unchanged. A task pointing at a recurrence type that can no longer be resolved (soft-deleted) is treated as every 7 days, like an unknown string before.
+  - Deploy notes: apply `006` then `007` on MariaDB before deploying this backend (the backend writes `category_id`/`recurrence_id`). `007` was written for MariaDB 11.8 but not run locally (no MariaDB available); dry-run it on a copy of the production database first. The legacy `tasks.category`/`tasks.recurrence` columns stay, frozen at their pre-migration values, for rollback to the previous backend; tasks edited after the deploy will have stale strings there.
 - [ ] T3 — Frontend Settings tab: API clients, hooks, and CRUD UI for categories and recurrence types.
 - [ ] T4 — Frontend tasks use catalogs: TaskModal, Dashboard filter/badges and TaskDetail read the household catalogs instead of hard-coded lists.
 
@@ -40,7 +45,7 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Known notes
 
-- The MySQL migrations 001–005 never add `day`, `time`, `category`, `recurrence` or `priority` to `tasks`; only the SQLite schema in `PdoTaskRepository` has them. The server works, so they were probably added by hand. Verify before writing the backfill in `006`.
+- The MySQL migrations 001–005 never add `day`, `time`, `category`, `recurrence` or `priority` to `tasks`; only the SQLite schema in `PdoTaskRepository` has them. Verified on the server on 2026-10-24 (`SHOW CREATE TABLE tasks`, read-only, user-authorized SSH): they exist there, added by hand: `day varchar(3)`, `time varchar(8)`, `category varchar(64)`, `recurrence varchar(32)`, `priority varchar(8) NOT NULL DEFAULT 'med'`. T2's migration closes the drift with `ADD COLUMN IF NOT EXISTS`.
 
 ## Checks
 
@@ -51,6 +56,12 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 - 2026-10-24: exploration done; feature document created.
 - 2026-10-24: T1 done (`da5738e`). RED: `CategoryTest::testItCreatesACategoryWithATrimmedNameAndOptionalColor` failed with `Error: Class "App\Domain\Tasks\Catalog\Category" not found` (likewise handler tests on missing `InMemoryCategoryRepository` and Pdo tests on missing `PdoCategoryRepository`). GREEN: `composer test` → OK (205 tests, 505 assertions); baseline was 150/390.
+- 2026-10-24: T2 done (`3031265`). RED: `TaskCatalogReferencesTest::testItCreatesATaskReferencingCatalogEntriesOfItsHousehold` failed with `Error: Unknown named parameter $categoryRepository` (guard tests: `Class "App\Application\Tasks\CatalogGuard\CatalogGuard" not found`); `TaskAssignmentPolicyTest` failed with `TypeError: ...weightOf(): Argument #1 ($recurrence) must be of type ?string, int given`; `TaskControllerTest` new cases failed with `Unknown named parameter $categoryRepository`. GREEN: `composer test` → OK (228 tests, 566 assertions).
+
+## Open notes from T2
+
+- Deleting a catalog entry does not touch its tasks: they keep the id, their `category`/`recurrence` name resolves to `null`, and auto-assign treats a dangling recurrence as every 7 days. Re-sending that same id on PATCH is rejected (400), so T4 must send only changed fields or drop dangling ids.
+- A household with no catalog rows still gets defaults only from the catalog GET endpoints; listing tasks does not seed.
 
 ## Open notes from T1
 
@@ -60,4 +71,4 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Next step
 
-- T2.
+- T3.
