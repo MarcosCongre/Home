@@ -25,12 +25,14 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
   tasks: Task[]
   onSelect: (id: number) => void
   users: User[]
-  onToggleComplete: (taskId: number, userId: number) => Promise<void>
+  onToggleComplete: (taskId: number, userId: number, nextAssigneeId?: number) => Promise<void>
   onAutoAssign?: () => Promise<void>
   isAutoAssigning?: boolean
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [filter, setFilter] = useState('All')
+  // A repeatable task being completed waits here until the next member is chosen.
+  const [handOff, setHandOff] = useState<{ task: Task; next: number | '' } | null>(null)
   const done = tasks.filter(t => t.done).length
   const completionPct = tasks.length ? Math.round((done / tasks.length) * 100) : 0
   const visible = filter === 'All' ? tasks : tasks.filter(t => t.category === filter)
@@ -96,7 +98,13 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
               className="bg-white rounded-2xl pl-2 pr-4 py-3 flex items-center gap-2 shadow-sm active:scale-[0.99] transition-transform"
             >
               <button
-                onClick={() => void onToggleComplete(task.id, task.assignee || 0)}
+                onClick={() => {
+                  if (task.repeatable && !task.done) {
+                    setHandOff({ task, next: task.assignee })
+                    return
+                  }
+                  void onToggleComplete(task.id, task.assignee || 0)
+                }}
                 className="shrink-0 w-11 h-11 flex items-center justify-center"
               >
                 <span
@@ -115,6 +123,7 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   <Badge label={categoryLabel(task.category)} color={catColor} />
                   <Badge label={recurrenceLabel(task.recurrence)} color="#6E604E" />
+                  {task.repeatable && <Badge label={es.repeatable.badge} color="#6B7C4E" />}
                   {task.time && task.time !== '—' && (
                     <span className="text-[11px] text-[#6E604E]">· {task.time}</span>
                   )}
@@ -125,6 +134,39 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
           )
         })}
       </div>
+
+      {handOff && (
+        <ConfirmDialog
+          open
+          tone="primary"
+          title={es.repeatable.nextTitle}
+          message={es.repeatable.nextMessage(handOff.task.title)}
+          confirmLabel={es.repeatable.complete}
+          onConfirm={() => {
+            const { task, next } = handOff
+            setHandOff(null)
+            void onToggleComplete(task.id, task.assignee || 0, next === '' ? undefined : next)
+          }}
+          onCancel={() => setHandOff(null)}
+        >
+          <div className="flex flex-wrap gap-2">
+            {users.map(u => (
+              <button
+                key={u.id}
+                onClick={() => setHandOff({ ...handOff, next: u.id })}
+                aria-pressed={handOff.next === u.id}
+                className="flex-1 basis-20 min-w-0 flex flex-col items-center gap-1.5 py-2.5 px-1 rounded-xl transition-all border-2"
+                style={handOff.next === u.id
+                  ? { borderColor: u.color, background: u.color + '15' }
+                  : { borderColor: 'transparent', background: '#fff' }}
+              >
+                <Avatar user={u} size={30} />
+                <span className="max-w-full truncate text-[11px] font-medium" style={{ color: handOff.next === u.id ? u.color : '#6E604E' }}>{u.name}</span>
+              </button>
+            ))}
+          </div>
+        </ConfirmDialog>
+      )}
     </div>
   )
 }

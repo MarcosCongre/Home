@@ -13,6 +13,7 @@ type TaskFormInput = {
   category: string
   recurrence: string
   priority: Task['priority']
+  repeatable: boolean
 }
 
 type TaskState = {
@@ -188,18 +189,22 @@ export function useTasks() {
   const completeTaskById = useCallback(
     async (
       taskId: number,
-      userId: number
+      userId: number,
+      nextAssigneeId?: number
     ) => {
       const current = state.tasks.find(task => task.id === taskId)
       if (!current) return
 
       const nextDone = !current.done
 
-      updateTaskOptimistically(taskId, task => ({ ...task, done: nextDone }))
+      // A repeatable task stays pending and only changes hands.
+      updateTaskOptimistically(taskId, task => current.repeatable && nextDone
+        ? { ...task, assignee: nextAssigneeId ?? task.assignee }
+        : { ...task, done: nextDone })
 
       try {
         const savedTask = nextDone
-          ? await completeTaskRequest(taskId, userId)
+          ? await completeTaskRequest(taskId, userId, current.repeatable ? nextAssigneeId : undefined)
           : await reopenTaskRequest(taskId)
         replaceTask(savedTask)
       } catch {

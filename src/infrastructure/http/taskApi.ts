@@ -8,10 +8,11 @@ export async function listTasks(): Promise<Task[]> {
   return payload.map(mapTaskDto)
 }
 
-export async function completeTask(taskId: number, userId: number): Promise<Task> {
+// nextAssigneeId only matters for repeatable tasks: who does it next.
+export async function completeTask(taskId: number, userId: number, nextAssigneeId?: number): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}/complete`, {
     method: 'PATCH',
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify({ userId, nextAssigneeId: nextAssigneeId ?? null }),
   })
 
   return mapTaskDto(payload)
@@ -43,6 +44,7 @@ export async function createTask(
     category?: string;
     recurrence?: string;
     priority?: string;
+    repeatable?: boolean;
   }
 ): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks`, {
@@ -55,7 +57,8 @@ export async function createTask(
       time: data.time,
       category: data.category,
       recurrence: data.recurrence,
-      priority: data.priority
+      priority: data.priority,
+      repeatable: data.repeatable ?? false
     }),
   })
 
@@ -73,6 +76,7 @@ export async function updateTask(
     category?: string;
     recurrence?: string;
     priority?: string;
+    repeatable?: boolean;
   }
 ): Promise<Task> {
   const payload = await request<TaskDto>(`${environment.apiBaseUrl}/tasks/${encodeURIComponent(taskId)}`, {

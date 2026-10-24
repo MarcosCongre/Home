@@ -22,6 +22,7 @@ export type TaskFormData = {
   category: string
   recurrence: string
   priority: Task['priority']
+  repeatable: boolean
 }
 
 export function TaskModal({
@@ -47,6 +48,7 @@ export function TaskModal({
   const [recurrence, setRecurrence] = useState(initial?.recurrence ?? 'none')
   const [priority, setPriority] = useState<Task['priority']>(initial?.priority ?? 'med')
   const [category, setCategory] = useState(initial?.category ?? CATEGORIES[0])
+  const [repeatable, setRepeatable] = useState(initial?.repeatable ?? false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -187,6 +189,27 @@ export function TaskModal({
             </div>
         </div>
 
+        <button
+            type="button"
+            role="switch"
+            aria-checked={repeatable}
+            onClick={() => setRepeatable(r => !r)}
+            className="mt-4 w-full flex items-center gap-3 rounded-xl bg-white px-3 py-3 text-left"
+        >
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-medium text-[#3D2E1E]">{es.fields.repeatable}</span>
+              <span className="block text-[11px] text-[#6E604E] mt-0.5">{es.fields.repeatableHint}</span>
+            </span>
+            <span
+              className="shrink-0 w-11 h-6 rounded-full p-0.5 transition-colors"
+              style={{ background: repeatable ? '#6B7C4E' : '#D8CEBC' }}
+            >
+              <span
+                className="block w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
+                style={{ transform: repeatable ? 'translateX(20px)' : 'translateX(0)' }}
+              />
+            </span>
+        </button>
 
         <div className="flex gap-3 mt-5">
           <button
@@ -204,6 +227,7 @@ export function TaskModal({
               category,
               recurrence,
               priority,
+              repeatable,
             })}
             disabled={!title.trim()}
             className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold transition-opacity disabled:opacity-40"

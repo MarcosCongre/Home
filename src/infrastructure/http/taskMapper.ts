@@ -16,6 +16,7 @@ export type TaskDto = {
   time?: string | null
   priority?: Task['priority'] | null
   history?: string[]
+  repeatable?: boolean
 }
 
 export function mapTaskDto(dto: TaskDto): Task {
@@ -34,5 +35,6 @@ export function mapTaskDto(dto: TaskDto): Task {
     time: dto.time ?? undefined,
     priority: dto.priority ?? 'low',
     history: dto.history ?? [],
+    repeatable: dto.repeatable ?? false,
   }
 }

@@ -14,16 +14,16 @@ export const INIT_USERS: Member[] = [
 ]
 
 export const INIT_TASKS: Task[] = [
-  { id: 1, title: 'Aspirar la sala', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Mon', time: '10:00', priority: 'med', history: ['9 sep', '2 sep', '26 ago'] },
-  { id: 2, title: 'Sacar la basura', assignee: 2, category: 'Waste', recurrence: 'Tue & Fri', done: true, day: 'Tue', time: '07:30', priority: 'high', history: ['10 sep', '6 sep', '30 ago'] },
-  { id: 3, title: 'Alimentar a Luna', assignee: 3, category: 'Pets', recurrence: 'Daily', done: false, day: 'Mon', time: '08:00', priority: 'high', history: ['11 sep', '10 sep', '9 sep'] },
-  { id: 4, title: 'Hacer las compras', assignee: 1, category: 'Shopping', recurrence: 'Weekly', done: false, day: 'Wed', time: '14:00', priority: 'med', history: ['8 sep', '1 sep', '25 ago'] },
-  { id: 5, title: 'Lavar la ropa de cama', assignee: 2, category: 'Laundry', recurrence: 'Biweekly', done: false, day: 'Sat', time: '09:00', priority: 'low', history: ['6 sep', '23 ago'] },
-  { id: 6, title: 'Trapear el piso de la cocina', assignee: 4, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Thu', time: '11:00', priority: 'med', history: ['5 sep', '29 ago'] },
-  { id: 7, title: 'Regar las plantas', assignee: 3, category: 'Garden', recurrence: 'Mon & Thu', done: true, day: 'Mon', time: '09:00', priority: 'low', history: ['9 sep', '5 sep', '2 sep'] },
-  { id: 8, title: 'Limpiar el baño', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Fri', time: '10:00', priority: 'med', history: ['5 sep', '29 ago'] },
-  { id: 9, title: 'Pagar la factura de luz', assignee: 2, category: 'Bills', recurrence: 'Monthly', done: false, day: 'Wed', time: '—', priority: 'high', history: ['15 ago', '15 jul'] },
-  { id: 10, title: 'Poner el lavavajillas', assignee: 4, category: 'Kitchen', recurrence: 'Daily', done: false, day: 'Tue', time: '20:00', priority: 'low', history: ['10 sep', '9 sep', '8 sep'] },
+  { id: 1, title: 'Aspirar la sala', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Mon', time: '10:00', priority: 'med', history: ['9 sep', '2 sep', '26 ago'], repeatable: false },
+  { id: 2, title: 'Sacar la basura', assignee: 2, category: 'Waste', recurrence: 'Tue & Fri', done: true, day: 'Tue', time: '07:30', priority: 'high', history: ['10 sep', '6 sep', '30 ago'], repeatable: false },
+  { id: 3, title: 'Alimentar a Luna', assignee: 3, category: 'Pets', recurrence: 'Daily', done: false, day: 'Mon', time: '08:00', priority: 'high', history: ['11 sep', '10 sep', '9 sep'], repeatable: true },
+  { id: 4, title: 'Hacer las compras', assignee: 1, category: 'Shopping', recurrence: 'Weekly', done: false, day: 'Wed', time: '14:00', priority: 'med', history: ['8 sep', '1 sep', '25 ago'], repeatable: false },
+  { id: 5, title: 'Lavar la ropa de cama', assignee: 2, category: 'Laundry', recurrence: 'Biweekly', done: false, day: 'Sat', time: '09:00', priority: 'low', history: ['6 sep', '23 ago'], repeatable: false },
+  { id: 6, title: 'Trapear el piso de la cocina', assignee: 4, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Thu', time: '11:00', priority: 'med', history: ['5 sep', '29 ago'], repeatable: false },
+  { id: 7, title: 'Regar las plantas', assignee: 3, category: 'Garden', recurrence: 'Mon & Thu', done: true, day: 'Mon', time: '09:00', priority: 'low', history: ['9 sep', '5 sep', '2 sep'], repeatable: false },
+  { id: 8, title: 'Limpiar el baño', assignee: 1, category: 'Cleaning', recurrence: 'Weekly', done: false, day: 'Fri', time: '10:00', priority: 'med', history: ['5 sep', '29 ago'], repeatable: false },
+  { id: 9, title: 'Pagar la factura de luz', assignee: 2, category: 'Bills', recurrence: 'Monthly', done: false, day: 'Wed', time: '—', priority: 'high', history: ['15 ago', '15 jul'], repeatable: false },
+  { id: 10, title: 'Poner el lavavajillas', assignee: 4, category: 'Kitchen', recurrence: 'Daily', done: false, day: 'Tue', time: '20:00', priority: 'low', history: ['10 sep', '9 sep', '8 sep'], repeatable: false },
 ]
 
 export const NOTIFS: Alert[] = [

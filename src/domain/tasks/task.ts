@@ -11,4 +11,6 @@ export type Task = {
   time?: string
   priority: TaskPriority
   history: string[]
+  // Done several times a day: completing it hands it back as pending.
+  repeatable: boolean
 }

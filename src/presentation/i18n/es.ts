@@ -78,6 +78,8 @@ export const es = {
     category: 'Categoría',
     recurrence: 'Recurrencia',
     priority: 'Prioridad',
+    repeatable: 'Se repite varias veces al día',
+    repeatableHint: 'Al completarla vuelve a quedar pendiente para quien elijas.',
   },
   dashboard: {
     date: 'Miércoles, 16 sep',
@@ -114,6 +116,12 @@ export const es = {
     deleteMessage: 'Esta acción no se puede deshacer.',
     deleteConfirm: 'Eliminar',
     deleteFailed: 'No se pudo eliminar la tarea. Intenta de nuevo.',
+  },
+  repeatable: {
+    badge: 'Se repite',
+    nextTitle: '¿Quién la hace ahora?',
+    nextMessage: (title: string) => `«${title}» volverá a quedar pendiente para quien elijas.`,
+    complete: 'Completar',
   },
   taskDetail: {
     completionHistory: 'Historial de cumplimiento',
