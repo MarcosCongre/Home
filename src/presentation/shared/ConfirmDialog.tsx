@@ -10,6 +10,11 @@ type ConfirmDialogProps = {
   cancelLabel?: string
   tone?: 'danger' | 'primary'
   confirmDisabled?: boolean
+  // While the confirmed action runs, both buttons are locked and dismissing is ignored.
+  pending?: boolean
+  pendingLabel?: string
+  // Failure message from the last attempt; the dialog stays open so the user can retry or cancel.
+  error?: ReactNode
   // Optional visual above the title (e.g. an avatar) and extra body content (e.g. a picker).
   illustration?: ReactNode
   children?: ReactNode
@@ -27,6 +32,9 @@ export function ConfirmDialog({
   cancelLabel = es.common.cancel,
   tone = 'danger',
   confirmDisabled = false,
+  pending = false,
+  pendingLabel = es.common.deleting,
+  error,
   illustration,
   children,
   onConfirm,
@@ -35,9 +43,12 @@ export function ConfirmDialog({
   const cancelRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
   const messageId = useId()
+  const cancel = () => {
+    if (!pending) onCancel()
+  }
   // Keep the latest handler without re-running the focus effect on every parent render.
-  const onCancelRef = useRef(onCancel)
-  onCancelRef.current = onCancel
+  const onCancelRef = useRef(cancel)
+  onCancelRef.current = cancel
 
   useEffect(() => {
     if (!open) return
@@ -66,11 +77,16 @@ export function ConfirmDialog({
     <div
       className="fixed inset-0 z-[70] flex items-center justify-center px-6"
       style={{ background: 'rgba(61,46,30,0.45)', backdropFilter: 'blur(4px)' }}
-      onClick={onCancel}
+      onClick={e => {
+        // Keep the click from also reaching a parent modal's backdrop.
+        e.stopPropagation()
+        cancel()
+      }}
     >
       <div
         role="alertdialog"
         aria-modal="true"
+        aria-busy={pending}
         aria-labelledby={titleId}
         aria-describedby={message ? messageId : undefined}
         className="w-full max-w-sm max-h-[90dvh] overflow-y-auto bg-[#F6EFE3] rounded-3xl px-5 py-6"
@@ -82,21 +98,27 @@ export function ConfirmDialog({
           <p id={messageId} className="text-xs text-[#6E604E] text-center">{message}</p>
         )}
         {children && <div className="mt-4">{children}</div>}
+        {error && (
+          <p role="alert" className="mt-4 rounded-xl bg-[#F5D4C2] px-3 py-2 text-xs font-medium text-[#B53A3A] text-center">
+            {error}
+          </p>
+        )}
         <div className="flex gap-3 mt-5">
           <button
             ref={cancelRef}
-            onClick={onCancel}
-            className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#6E604E] text-sm font-semibold"
+            onClick={cancel}
+            disabled={pending}
+            className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#6E604E] text-sm font-semibold transition-opacity disabled:opacity-40"
           >
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            disabled={confirmDisabled}
+            disabled={confirmDisabled || pending}
             className="flex-1 py-3 rounded-2xl text-white text-sm font-semibold transition-opacity disabled:opacity-40"
             style={{ background: confirmColors[tone] }}
           >
-            {confirmLabel}
+            {pending ? pendingLabel : confirmLabel}
           </button>
         </div>
       </div>

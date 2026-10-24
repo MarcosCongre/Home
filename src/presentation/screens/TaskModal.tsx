@@ -36,8 +36,8 @@ export function TaskModal({
   defaultDay?: string
   users: User[]
   onSave: (data: TaskFormData) => void
-  // Only offered when editing an existing task.
-  onDelete?: () => void
+  // Only offered when editing an existing task. Rejects when the delete fails.
+  onDelete?: () => Promise<void>
   onClose: () => void
 }) {
   const [title, setTitle] = useState(initial?.title ?? '')
@@ -48,6 +48,21 @@ export function TaskModal({
   const [priority, setPriority] = useState<Task['priority']>(initial?.priority ?? 'med')
   const [category, setCategory] = useState(initial?.category ?? CATEGORIES[0])
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const confirmDelete = async () => {
+    if (!onDelete || deleting) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      // On success the parent closes (unmounts) this modal.
+      await onDelete()
+    } catch {
+      setDeleteError(es.taskModal.deleteFailed)
+      setDeleting(false)
+    }
+  }
 
   return (
     <div
@@ -201,6 +216,7 @@ export function TaskModal({
         {initial && onDelete && (
           <button
             onClick={() => setConfirmingDelete(true)}
+            disabled={deleting}
             className="w-full min-h-11 mt-3 py-2 rounded-2xl text-sm font-semibold text-[#B53A3A]"
           >
             {es.taskModal.delete}
@@ -214,11 +230,13 @@ export function TaskModal({
           title={es.taskModal.deleteTitle(initial.title)}
           message={es.taskModal.deleteMessage}
           confirmLabel={es.taskModal.deleteConfirm}
-          onConfirm={() => {
+          pending={deleting}
+          error={deleteError}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => {
             setConfirmingDelete(false)
-            onDelete()
+            setDeleteError(null)
           }}
-          onCancel={() => setConfirmingDelete(false)}
         />
       )}
     </div>

@@ -596,12 +596,14 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   tasks: Task[]
   onAddUser: (u: User) => void
   onUpdateUser: (userId: number, data: Omit<User, 'id'>) => void
-  onRemoveUser: (userId: number) => void
+  onRemoveUser: (userId: number) => Promise<void>
   onUnassignTasks: (userId: number) => void
 }) {
   const [selected, setSelected] = useState<number | null>(null)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const uid = useId()
 
   const stats = users.map(u => {
@@ -614,11 +616,26 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   const selectedStat = selected ? stats.find(u => u.id === selected) : null
   const userTasks = selected ? tasks.filter(t => t.assignee === selected) : []
 
-  const deleteUser = (id: number) => {
-    onRemoveUser(id)
-    onUnassignTasks(id)
+  const deleteUser = async (id: number) => {
+    if (deleting) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await onRemoveUser(id)
+      onUnassignTasks(id)
+      setDeleteTarget(null)
+      setSelected(null)
+    } catch {
+      // Keep the dialog open so the user can retry or cancel.
+      setDeleteError(es.members.removeFailed)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const cancelDelete = () => {
     setDeleteTarget(null)
-    setSelected(null)
+    setDeleteError(null)
   }
 
   const deleteTargetUser = deleteTarget ? users.find(u => u.id === deleteTarget) : null
@@ -779,8 +796,10 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
           title={es.members.removeTitle(deleteTargetUser.name)}
           message={deleteTargetTaskCount > 0 ? es.members.unassignWarning(deleteTargetTaskCount) : undefined}
           confirmLabel={es.members.remove}
-          onConfirm={() => deleteUser(deleteTarget)}
-          onCancel={() => setDeleteTarget(null)}
+          pending={deleting}
+          error={deleteError}
+          onConfirm={() => void deleteUser(deleteTarget)}
+          onCancel={cancelDelete}
         />
       )}
     </div>
