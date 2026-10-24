@@ -1,6 +1,6 @@
 # Feature: task-catalogs
 
-**Status:** T1–T2b done, review T2 + T2b next, then T3
+**Status:** T1–T3 done, T4 next
 **Branch:** `feat/task-catalogs` (stacked on `feat/repeatable-tasks`)
 
 ## Objective
@@ -42,7 +42,13 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
     - **Migration 007 unproved:** never run against MariaDB. Dry-run it on a copy of production before deploying.
     - **Re-run claim:** the 007 header said "safe to re-run"; fixed to "run once, do not re-run after the new backend is live".
     - **Completed non-repeatable recurring tasks:** they rotate once, then stay locked to the new assignee, because their status stays completed and no new `completedAt` arrives. Open product question.
-- [ ] T3 — Frontend Settings tab: API clients, hooks, and CRUD UI for categories and recurrence types.
+- [x] T3 — Frontend Settings tab: API clients, hooks, and CRUD UI for categories and recurrence types.
+  - Route: delegated (writer). Trigger: 2+ non-trivial files across domain, application, infrastructure and presentation.
+  - Commit: `03f620c` (+941/−2; over the ~400-line heuristic because the screen with two modals, validation and delete flow is one coherent unit; about 520 lines are `SettingsScreen.tsx`).
+  - Summary: `src/domain/catalogs/catalog.ts` holds the `Category`/`RecurrenceType` types and the backend's limits (name 1..64 code points, interval 1..365, optional `#RRGGBB`). `categoryApi.ts`/`recurrenceTypeApi.ts` follow `memberApi.ts`; PATCH and DELETE send `householdId` in the query (PATCH also in the body) and PATCH always sends the full entry (`color: null` clears it). `useCatalog` is a generic `useReducer` hook (load/add/update/remove) wrapped by `useCategories`/`useRecurrenceTypes`; `App` owns both so T4 can reuse them. In demo mode (`VITE_DEMO_MODE=true`) the hooks never call the API: they start from `DEMO_CATEGORIES`/`DEMO_RECURRENCE_TYPES` (built in `demoData.ts` from `CATEGORIES`/`RECURRENCES`, matching `DefaultCatalogs`) and apply the same case-insensitive duplicate rule in memory. New `settings` tab (icon `⚙`, label "Configuración") renders `SettingsScreen`: two sections (Categorías with a color swatch, Recurrencias with "Cada N días"), a bottom-sheet/centered modal for add/edit with inline validation, an inline message for 400 (duplicate or invalid) and 404, and `ConfirmDialog` with `pending`/`error` for deletes (a 404 on delete closes the dialog and reloads). Default names are stored in English and shown through `categoryLabel`/`recurrenceLabel`; the edit form shows the translated label and sends the stored name back if it is left unchanged, so opening and saving does not rename an entry. Bottom-nav labels now truncate so five tabs fit at phone width. Tasks still use the hard-coded lists (T4).
+  - Test policy: no frontend test runner exists, so test-first does not apply; verified with `npx tsc --noEmit` and `npm run build`.
+  - Manual check: with the backend running, open Configuración → both lists show the seeded defaults; add a category with a custom color, rename it, try a duplicate name in another case (inline 400 message), delete it through the dialog; add a recurrence "Cada 10 días", try 0 and 366 (inline validation); reload and confirm the changes persisted. With `VITE_DEMO_MODE=true`, repeat without a backend (changes live in memory until reload).
+  - Formatter note: `npm run format` (oxfmt 0.2) rewrote all 31 files to double quotes and produced code that does not compile (`{ id: number name: string }`, missing separators). Its output was discarded; the repo's existing style was kept by hand.
 - [ ] T4 — Frontend tasks use catalogs: TaskModal, Dashboard filter/badges and TaskDetail read the household catalogs instead of hard-coded lists.
 
 ## Acceptance criteria
@@ -68,6 +74,7 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 - 2026-10-24: T1 done (`da5738e`). RED: `CategoryTest::testItCreatesACategoryWithATrimmedNameAndOptionalColor` failed with `Error: Class "App\Domain\Tasks\Catalog\Category" not found` (likewise handler tests on missing `InMemoryCategoryRepository` and Pdo tests on missing `PdoCategoryRepository`). GREEN: `composer test` → OK (205 tests, 505 assertions); baseline was 150/390.
 - 2026-10-24: T2 done (`3031265`). RED: `TaskCatalogReferencesTest::testItCreatesATaskReferencingCatalogEntriesOfItsHousehold` failed with `Error: Unknown named parameter $categoryRepository` (guard tests: `Class "App\Application\Tasks\CatalogGuard\CatalogGuard" not found`); `TaskAssignmentPolicyTest` failed with `TypeError: ...weightOf(): Argument #1 ($recurrence) must be of type ?string, int given`; `TaskControllerTest` new cases failed with `Unknown named parameter $categoryRepository`. GREEN: `composer test` → OK (228 tests, 566 assertions).
 - 2026-10-24: T2b done (`5daed26`). RED: `TaskAssignmentPolicyTest` 7 failures, e.g. `testRecurringTaskStaysWithItsAssigneeWhileNotCompletedEvenDaysLater` failed with `Failed asserting that two arrays are identical` (expected `[]`, got `[1 => 2]`), likewise the completion-day, timezone, completion-at-assignment, completed non-repeatable, unresolved-recurrence and no-assignment-date cases. GREEN: `composer test` → OK (226 tests, 565 assertions); 12 obsolete N-day cycle cases removed, 10 added.
+- 2026-10-24: T3 done (`03f620c`). No frontend test runner, so no RED/GREEN (exception recorded on T3). `npx tsc --noEmit` → exit 0, no errors; `npm run build` → built in 1.01s (288.08 kB JS). `npm run format` was run and reverted because its output did not compile.
 
 ## Open notes from T2
 
@@ -82,4 +89,4 @@ This is requirement 3 of 4 from the 2026-10-24 request; each requirement lives o
 
 ## Next step
 
-- T3. Before deploy: dry-run 006 + 007 on a production copy; deploy backend and frontend together after T4.
+- T4. Before deploy: dry-run 006 + 007 on a production copy; deploy backend and frontend together after T4.
