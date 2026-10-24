@@ -11,6 +11,7 @@ import {
 } from '@/infrastructure/demo/demoData'
 import { Avatar } from '@/presentation/shared/Avatar'
 import { Badge } from '@/presentation/shared/Badge'
+import { ConfirmDialog } from '@/presentation/shared/ConfirmDialog'
 import { TaskModal, type TaskFormData } from '@/presentation/screens/TaskModal'
 import {
   categoryLabel,
@@ -457,45 +458,6 @@ export function MemberModal({
   )
 }
 
-export function ConfirmDelete({ user, taskCount, onConfirm, onClose }: {
-  user: User
-  taskCount: number
-  onConfirm: () => void
-  onClose: () => void
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-6"
-      style={{ background: 'rgba(61,46,30,0.45)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm bg-[#F6EFE3] rounded-3xl px-5 py-6"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex justify-center mb-3">
-          <Avatar user={user} size={52} />
-        </div>
-        <h3 className="font-display text-xl text-[#3D2E1E] text-center mb-1">{es.members.removeTitle(user.name)}</h3>
-        {taskCount > 0 && (
-          <p className="text-xs text-[#6E604E] text-center mb-4">
-            {es.members.unassignWarning(taskCount)}
-          </p>
-        )}
-        {taskCount === 0 && <div className="mb-4" />}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#6E604E] text-sm font-semibold">
-            {es.common.cancel}
-          </button>
-          <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl bg-[#B53A3A] text-white text-sm font-semibold">
-            {es.members.remove}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
   taskId: number
   tasks: Task[]
@@ -660,6 +622,7 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   }
 
   const deleteTargetUser = deleteTarget ? users.find(u => u.id === deleteTarget) : null
+  const deleteTargetTaskCount = deleteTarget ? tasks.filter(t => t.assignee === deleteTarget).length : 0
 
   return (
     <div className="flex flex-col h-full relative">
@@ -810,11 +773,14 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
         }} onClose={() => setModal(null)} />
       )}
       {deleteTarget && deleteTargetUser && (
-        <ConfirmDelete
-          user={deleteTargetUser}
-          taskCount={tasks.filter(t => t.assignee === deleteTarget).length}
+        <ConfirmDialog
+          open
+          illustration={<Avatar user={deleteTargetUser} size={52} />}
+          title={es.members.removeTitle(deleteTargetUser.name)}
+          message={deleteTargetTaskCount > 0 ? es.members.unassignWarning(deleteTargetTaskCount) : undefined}
+          confirmLabel={es.members.remove}
           onConfirm={() => deleteUser(deleteTarget)}
-          onClose={() => setDeleteTarget(null)}
+          onCancel={() => setDeleteTarget(null)}
         />
       )}
     </div>
