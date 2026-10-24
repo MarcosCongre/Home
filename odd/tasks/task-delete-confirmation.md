@@ -1,6 +1,6 @@
 # Feature: task-delete-confirmation
 
-**Status:** done, pending review
+**Status:** T1–T4 done, pending review
 **Branch:** `feat/task-delete-confirmation` (from `origin/main`)
 
 ## Objective
@@ -15,11 +15,15 @@ This is requirement 1 of 4 from the 2026-10-24 request. The user asked for each 
 
 - [x] T1 — Reusable `ConfirmDialog` + delete task with confirmation. Route: delegated. Commit `56c4220` (cherry-pick of `4043018`). The delete button is in TaskModal edit mode (Calendar). `App.tsx` now wires `useTasks().deleteTask`. Router test covers `DELETE /tasks/{id}`.
 - [x] T2 — Member deletion uses `ConfirmDialog`; the old bespoke `ConfirmDelete` was removed. Route: delegated. Commit `8d6bb76` (cherry-pick of `ad0f8f8`).
+- [x] T3 — Handle delete failures and prevent double submit (from native review). Route: delegated (writer, 4 files). Commit `6ce5001`. `ConfirmDialog` gains `pending`/`pendingLabel`/`error`: while pending both buttons are disabled, Escape/backdrop are ignored and the confirm shows "Eliminando…"; an error renders as `role="alert"` and the dialog stays open. Its backdrop click no longer bubbles to a parent modal. `TaskModal` awaits `onDelete` (now `() => Promise<void>`) and shows `es.taskModal.deleteFailed`; `Members` awaits `onRemoveUser` and only unassigns/closes on success, else shows `es.members.removeFailed`.
+- [x] T4 — Soft delete for tasks and members. Route: delegated (writer, backend). Commit `a55b579`. Migration `004_add_soft_delete.sql` adds nullable `deleted_at DATETIME` to `tasks` and `members`. Entities get `delete($now)` (first date wins), `isDeleted()`, `deletedAt()`; `Task::unassign()` keeps `lastAssignedAt`. Handlers stamp and save instead of removing rows; hard `delete()` was removed from both repository interfaces. All Pdo and InMemory reads filter deleted rows. `DeleteMemberHandler` now unassigns the member's tasks inside a `TransactionRunner` (the FK `ON DELETE SET NULL` no longer fires); `MemberController`/`Router` pass the task repository and runner. HTTP contract unchanged.
 
 ## Acceptance criteria
 
 - Deleting a task or a member always asks for confirmation; cancel keeps the item.
 - `ConfirmDialog` is accessible: `role="alertdialog"`, `aria-modal`, focus starts on Cancel, Escape cancels.
+- A failed delete keeps the dialog open with an error; Delete cannot fire twice while a request is pending.
+- Deleted tasks and members keep their rows with `deleted_at` set and never appear in any read; deleting again is not found.
 
 ## Checks
 
@@ -29,3 +33,10 @@ This is requirement 1 of 4 from the 2026-10-24 request. The user asked for each 
 ## Progress
 
 - 2026-10-24: T1, T2 cherry-picked onto their own branch. `npm run build` OK; `composer test` OK (112 tests, 305 assertions).
+- 2026-10-24: T3 — no frontend test runner; `npm run build` OK, `npx tsc --noEmit` exit 0.
+- 2026-10-24: T4 — RED: `composer test` 128 tests, 8 errors, 2 failures (missing `delete`/`unassign`/`deletedAt`, no `deleted_at` column, member tasks not unassigned). GREEN: `composer test` OK (128 tests, 344 assertions). `npm run build` OK.
+
+## Next step
+
+- Apply `004_add_soft_delete.sql` manually on the home server MariaDB before deploying the backend; without it every task/member query fails on the missing column.
+- `PdoMemberRepository` has no automated test (its `ON DUPLICATE KEY` SQL is MySQL-only, so it cannot run on SQLite); verify member delete/list against MariaDB.
