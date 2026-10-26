@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Task } from '@/domain/tasks/task'
 import type { Member as User } from '@/domain/members/member'
 import { Avatar } from '@/presentation/shared/Avatar'
+import { ConfirmDialog } from '@/presentation/shared/ConfirmDialog'
 import { CATEGORIES, DAYS, RECURRENCES } from '@/infrastructure/demo/demoData'
 import {
   categoryLabel,
@@ -28,13 +29,16 @@ export function TaskModal({
   defaultDay = 'Mon',
   users,
   onSave,
-  onClose,  
+  onDelete,
+  onClose,
 }: {
   initial?: Task
   defaultDay?: string
   users: User[]
   onSave: (data: TaskFormData) => void
-  onClose: () => void  
+  // Only offered when editing an existing task. Rejects when the delete fails.
+  onDelete?: () => Promise<void>
+  onClose: () => void
 }) {
   const [title, setTitle] = useState(initial?.title ?? '')
   const [activeDay, setActiveDay] = useState(initial?.day ?? defaultDay)
@@ -43,6 +47,22 @@ export function TaskModal({
   const [recurrence, setRecurrence] = useState(initial?.recurrence ?? 'none')
   const [priority, setPriority] = useState<Task['priority']>(initial?.priority ?? 'med')
   const [category, setCategory] = useState(initial?.category ?? CATEGORIES[0])
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const confirmDelete = async () => {
+    if (!onDelete || deleting) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      // On success the parent closes (unmounts) this modal.
+      await onDelete()
+    } catch {
+      setDeleteError(es.taskModal.deleteFailed)
+      setDeleting(false)
+    }
+  }
 
   return (
     <div
@@ -192,7 +212,33 @@ export function TaskModal({
             {initial ? es.common.saveChanges : es.taskModal.addButton}
           </button>
         </div>
+
+        {initial && onDelete && (
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            disabled={deleting}
+            className="w-full min-h-11 mt-3 py-2 rounded-2xl text-sm font-semibold text-[#B53A3A]"
+          >
+            {es.taskModal.delete}
+          </button>
+        )}
       </div>
+
+      {initial && onDelete && (
+        <ConfirmDialog
+          open={confirmingDelete}
+          title={es.taskModal.deleteTitle(initial.title)}
+          message={es.taskModal.deleteMessage}
+          confirmLabel={es.taskModal.deleteConfirm}
+          pending={deleting}
+          error={deleteError}
+          onConfirm={() => void confirmDelete()}
+          onCancel={() => {
+            setConfirmingDelete(false)
+            setDeleteError(null)
+          }}
+        />
+      )}
     </div>
   )
 }

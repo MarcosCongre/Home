@@ -64,6 +64,7 @@ export const es = {
     back: 'Volver',
     retry: 'Reintentar',
     dismiss: 'Descartar alerta',
+    deleting: 'Eliminando…',
   },
   tabs: {
     home: 'Inicio',
@@ -108,6 +109,11 @@ export const es = {
     addTitle: 'Agregar tarea',
     editTitle: 'Editar tarea',
     addButton: 'Agregar tarea',
+    delete: 'Eliminar tarea',
+    deleteTitle: (title: string) => `¿Eliminar «${title}»?`,
+    deleteMessage: 'Esta acción no se puede deshacer.',
+    deleteConfirm: 'Eliminar',
+    deleteFailed: 'No se pudo eliminar la tarea. Intenta de nuevo.',
   },
   taskDetail: {
     completionHistory: 'Historial de cumplimiento',
@@ -141,5 +147,6 @@ export const es = {
         ? 'Su tarea quedará sin asignar.'
         : `Sus ${count} tareas quedarán sin asignar.`,
     remove: 'Eliminar',
+    removeFailed: 'No se pudo eliminar al miembro. Intenta de nuevo.',
   },
 } as const

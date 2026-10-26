@@ -32,7 +32,7 @@ final class Router
         }
 
         if ($method === 'POST' && $path === '/tasks') {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
             return $controller->create($this->decodeJson($this->body($request)));
         }
 
@@ -43,7 +43,7 @@ final class Router
         }
 
         if ($method === 'PATCH' && preg_match('#^/tasks/([^/]+)$#', $path, $matches) === 1) {
-            $controller = new TaskController($this->taskRepository, $this->alertRepository);
+            $controller = new TaskController($this->taskRepository, $this->alertRepository, $this->memberRepository);
             return $controller->update($this->positiveId($matches[1]), $this->decodeJson($this->body($request)));
         }
 
@@ -116,7 +116,7 @@ final class Router
         }
 
         if ($this->memberRepository !== null && $method === 'DELETE' && preg_match('#^/members/([^/]+)$#', $path, $matches) === 1) {
-            $controller = new MemberController($this->memberRepository);
+            $controller = new MemberController($this->memberRepository, $this->taskRepository, $this->transactionRunner);
             $id = $this->positiveId($matches[1]);
             $controller->delete($id);
             return ['deleted' => true, 'id' => $id];

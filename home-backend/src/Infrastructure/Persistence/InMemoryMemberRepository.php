@@ -28,7 +28,9 @@ final class InMemoryMemberRepository implements MemberRepositoryInterface
 
     public function findById(int $id): ?Member
     {
-        return $this->members[$id] ?? null;
+        $member = $this->members[$id] ?? null;
+
+        return $member === null || $member->isDeleted() ? null : $member;
     }
 
     /**
@@ -38,16 +40,11 @@ final class InMemoryMemberRepository implements MemberRepositoryInterface
     {
         $members = array_values(array_filter(
             $this->members,
-            static fn (Member $member): bool => $member->householdId() === $householdId
+            static fn (Member $member): bool => $member->householdId() === $householdId && !$member->isDeleted()
         ));
 
         usort($members, static fn (Member $a, Member $b): int => $a->id() <=> $b->id());
 
         return $members;
-    }
-
-    public function delete(int $id): void
-    {
-        unset($this->members[$id]);
     }
 }

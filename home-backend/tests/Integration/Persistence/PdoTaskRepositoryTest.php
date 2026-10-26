@@ -36,6 +36,25 @@ final class PdoTaskRepositoryTest extends TestCase
         $this->assertSame('Sort pantry', $tasks[0]->title()->value());
     }
 
+    public function testItPersistsDeletedAtAndHidesSoftDeletedTasks(): void
+    {
+        $pdo = new \PDO('sqlite::memory:');
+        $repository = new PdoTaskRepository($pdo);
+        $kept = Task::create(id: 110, title: 'Keep me', householdId: 'house-11', createdAt: new \DateTimeImmutable('2026-10-01 08:00:00'));
+        $deleted = Task::create(id: 111, title: 'Delete me', householdId: 'house-11', createdAt: new \DateTimeImmutable('2026-10-01 09:00:00'));
+        $repository->save($kept);
+        $repository->save($deleted);
+
+        $deleted->delete(new \DateTimeImmutable('2026-10-24 10:30:00'));
+        $repository->save($deleted);
+
+        $row = $pdo->query('SELECT deleted_at FROM tasks WHERE id = 111')->fetch(\PDO::FETCH_ASSOC);
+        $this->assertSame('2026-10-24 10:30:00', $row['deleted_at']);
+        $this->assertNull($repository->findById(111));
+        $this->assertNull($pdo->query('SELECT deleted_at FROM tasks WHERE id = 110')->fetchColumn());
+        $this->assertSame([110], array_map(static fn (Task $task): int => $task->id(), $repository->findByHouseholdId('house-11')));
+    }
+
     public function testItPersistsTaskMetadataAndDefaultPriority(): void
     {
         $pdo = new \PDO('sqlite::memory:');

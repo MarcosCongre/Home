@@ -11,6 +11,7 @@ import {
 } from '@/infrastructure/demo/demoData'
 import { Avatar } from '@/presentation/shared/Avatar'
 import { Badge } from '@/presentation/shared/Badge'
+import { ConfirmDialog } from '@/presentation/shared/ConfirmDialog'
 import { TaskModal, type TaskFormData } from '@/presentation/screens/TaskModal'
 import {
   categoryLabel,
@@ -128,12 +129,13 @@ export function Dashboard({ tasks, onSelect, users, onToggleComplete, onAutoAssi
   )
 }
 
-export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, onUpdateTask }: {
+export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, onUpdateTask, onDeleteTask }: {
   tasks: Task[]
   users: User[]
   onSelect: (id: number) => void
   onCreateTask: (data: TaskFormData) => Promise<void>
   onUpdateTask: (id: number, data: TaskFormData) => Promise<void>
+  onDeleteTask: (id: number) => Promise<void>
 }) {
   const userOf = (id: number | '') => users.find(u => u.id === id)
   const [activeDay, setActiveDay] = useState('All')
@@ -246,6 +248,10 @@ export function CalendarView({ tasks, users, onSelect: _onSelect, onCreateTask, 
           defaultDay={activeDay === 'All' ? DAYS[0] : activeDay}
           users={users}
           onClose={() => setTaskModal(null)}
+          onDelete={taskModal === 'add' ? undefined : async () => {
+            await onDeleteTask(taskModal.id)
+            setTaskModal(null)
+          }}
           onSave={async (data) => {
             if (taskModal === 'add') {
               await onCreateTask(data)
@@ -452,45 +458,6 @@ export function MemberModal({
   )
 }
 
-export function ConfirmDelete({ user, taskCount, onConfirm, onClose }: {
-  user: User
-  taskCount: number
-  onConfirm: () => void
-  onClose: () => void
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-6"
-      style={{ background: 'rgba(61,46,30,0.45)', backdropFilter: 'blur(4px)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm bg-[#F6EFE3] rounded-3xl px-5 py-6"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex justify-center mb-3">
-          <Avatar user={user} size={52} />
-        </div>
-        <h3 className="font-display text-xl text-[#3D2E1E] text-center mb-1">{es.members.removeTitle(user.name)}</h3>
-        {taskCount > 0 && (
-          <p className="text-xs text-[#6E604E] text-center mb-4">
-            {es.members.unassignWarning(taskCount)}
-          </p>
-        )}
-        {taskCount === 0 && <div className="mb-4" />}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 rounded-2xl bg-[#EDE4D4] text-[#6E604E] text-sm font-semibold">
-            {es.common.cancel}
-          </button>
-          <button onClick={onConfirm} className="flex-1 py-3 rounded-2xl bg-[#B53A3A] text-white text-sm font-semibold">
-            {es.members.remove}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function TaskDetail({ taskId, tasks, setTasks, onBack, users }: {
   taskId: number
   tasks: Task[]
@@ -629,12 +596,14 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   tasks: Task[]
   onAddUser: (u: User) => void
   onUpdateUser: (userId: number, data: Omit<User, 'id'>) => void
-  onRemoveUser: (userId: number) => void
+  onRemoveUser: (userId: number) => Promise<void>
   onUnassignTasks: (userId: number) => void
 }) {
   const [selected, setSelected] = useState<number | null>(null)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<number | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const uid = useId()
 
   const stats = users.map(u => {
@@ -647,14 +616,30 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
   const selectedStat = selected ? stats.find(u => u.id === selected) : null
   const userTasks = selected ? tasks.filter(t => t.assignee === selected) : []
 
-  const deleteUser = (id: number) => {
-    onRemoveUser(id)
-    onUnassignTasks(id)
+  const deleteUser = async (id: number) => {
+    if (deleting) return
+    setDeleting(true)
+    setDeleteError(null)
+    try {
+      await onRemoveUser(id)
+      onUnassignTasks(id)
+      setDeleteTarget(null)
+      setSelected(null)
+    } catch {
+      // Keep the dialog open so the user can retry or cancel.
+      setDeleteError(es.members.removeFailed)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const cancelDelete = () => {
     setDeleteTarget(null)
-    setSelected(null)
+    setDeleteError(null)
   }
 
   const deleteTargetUser = deleteTarget ? users.find(u => u.id === deleteTarget) : null
+  const deleteTargetTaskCount = deleteTarget ? tasks.filter(t => t.assignee === deleteTarget).length : 0
 
   return (
     <div className="flex flex-col h-full relative">
@@ -805,11 +790,16 @@ export function Members({ users, tasks, onAddUser, onUpdateUser, onRemoveUser, o
         }} onClose={() => setModal(null)} />
       )}
       {deleteTarget && deleteTargetUser && (
-        <ConfirmDelete
-          user={deleteTargetUser}
-          taskCount={tasks.filter(t => t.assignee === deleteTarget).length}
-          onConfirm={() => deleteUser(deleteTarget)}
-          onClose={() => setDeleteTarget(null)}
+        <ConfirmDialog
+          open
+          illustration={<Avatar user={deleteTargetUser} size={52} />}
+          title={es.members.removeTitle(deleteTargetUser.name)}
+          message={deleteTargetTaskCount > 0 ? es.members.unassignWarning(deleteTargetTaskCount) : undefined}
+          confirmLabel={es.members.remove}
+          pending={deleting}
+          error={deleteError}
+          onConfirm={() => void deleteUser(deleteTarget)}
+          onCancel={cancelDelete}
         />
       )}
     </div>

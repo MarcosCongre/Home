@@ -12,13 +12,17 @@ use App\Application\Members\ListMembers\ListMembersHandler;
 use App\Application\Members\ListMembers\ListMembersQuery;
 use App\Application\Members\UpdateMember\UpdateMemberCommand;
 use App\Application\Members\UpdateMember\UpdateMemberHandler;
+use App\Application\Shared\TransactionRunner;
 use App\Domain\Members\Member;
 use App\Domain\Members\MemberRepositoryInterface;
+use App\Domain\Tasks\TaskRepositoryInterface;
 
 final class MemberController
 {
     public function __construct(
-        private MemberRepositoryInterface $memberRepository
+        private MemberRepositoryInterface $memberRepository,
+        private ?TaskRepositoryInterface $taskRepository = null,
+        private ?TransactionRunner $transactionRunner = null
     ) {
     }
 
@@ -58,7 +62,11 @@ final class MemberController
 
     public function delete(int $memberId): void
     {
-        $handler = new DeleteMemberHandler($this->memberRepository);
+        $handler = new DeleteMemberHandler(
+            $this->memberRepository,
+            $this->taskRepository ?? throw new \LogicException('Deleting a member requires the task repository.'),
+            $this->transactionRunner
+        );
         $handler->handle(new DeleteMemberCommand($memberId));
     }
 

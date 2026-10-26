@@ -199,4 +199,52 @@ final class TaskTest extends TestCase
         $this->assertSame(6, $task->assignedMemberId());
         $this->assertSame($at, $task->lastAssignedAt());
     }
+
+    public function testANewTaskIsNotDeleted(): void
+    {
+        $task = Task::create(
+            id: 465,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+
+        $this->assertNull($task->deletedAt());
+        $this->assertFalse($task->isDeleted());
+    }
+
+    public function testDeletingRecordsTheGivenDateAndKeepsTheFirstOne(): void
+    {
+        $task = Task::create(
+            id: 466,
+            title: 'Wash dishes',
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-09-16 08:00:00')
+        );
+        $at = new \DateTimeImmutable('2026-10-24 09:00:00');
+
+        $task->delete($at);
+        $task->delete(new \DateTimeImmutable('2026-10-25 09:00:00'));
+
+        $this->assertTrue($task->isDeleted());
+        $this->assertSame($at, $task->deletedAt());
+    }
+
+    public function testUnassigningClearsOnlyTheAssignee(): void
+    {
+        $assignedAt = new \DateTimeImmutable('2026-09-01 08:00:00');
+        $task = new Task(
+            id: 467,
+            title: new \App\Domain\Tasks\TaskTitle('Wash dishes'),
+            householdId: 'house-2',
+            createdAt: new \DateTimeImmutable('2026-08-16 08:00:00'),
+            assignedMemberId: 4,
+            lastAssignedAt: $assignedAt
+        );
+
+        $task->unassign();
+
+        $this->assertNull($task->assignedMemberId());
+        $this->assertSame($assignedAt, $task->lastAssignedAt(), 'Rotation history is kept, like the old ON DELETE SET NULL.');
+    }
 }

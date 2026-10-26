@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Tasks\CreateTask;
 
+use App\Application\Tasks\AssigneeGuard\AssigneeGuard;
 use App\Application\Tasks\AssignmentAlert\AssignmentAlertNotifier;
 use App\Domain\Alerts\AlertRepositoryInterface;
+use App\Domain\Members\MemberRepositoryInterface;
 use App\Domain\Tasks\Task;
 use App\Domain\Tasks\TaskRepositoryInterface;
 use DateTimeImmutable;
@@ -14,12 +16,15 @@ final class CreateTaskHandler
 {
     public function __construct(
         private readonly TaskRepositoryInterface $taskRepository,
-        private readonly ?AlertRepositoryInterface $alertRepository = null
+        private readonly ?AlertRepositoryInterface $alertRepository = null,
+        private readonly ?MemberRepositoryInterface $memberRepository = null
     ) {
     }
 
     public function handle(CreateTaskCommand $command): Task
     {
+        (new AssigneeGuard($this->memberRepository))->ensureAssignable($command->assignedMemberId, $command->householdId);
+
         $task = Task::create(
             id: 0,
             title: $command->title,

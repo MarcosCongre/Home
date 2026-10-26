@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Tasks\DeleteTask;
 
 use App\Domain\Tasks\TaskRepositoryInterface;
+use DateTimeImmutable;
 
 final class DeleteTaskHandler
 {
@@ -14,10 +15,14 @@ final class DeleteTaskHandler
 
     public function handle(int $taskId): void
     {
-        if ($this->taskRepository->findById($taskId) === null) {
+        // Already-deleted tasks are not returned, so they are reported as not found too.
+        $task = $this->taskRepository->findById($taskId);
+
+        if ($task === null) {
             throw new \RuntimeException('Task not found.');
         }
 
-        $this->taskRepository->delete($taskId);
+        $task->delete(new DateTimeImmutable());
+        $this->taskRepository->save($task);
     }
 }

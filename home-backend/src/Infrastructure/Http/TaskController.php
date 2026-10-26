@@ -39,7 +39,7 @@ final class TaskController
      */
     public function create(array $payload): array
     {
-        $handler = new CreateTaskHandler($this->taskRepository, $this->alertRepository);
+        $handler = new CreateTaskHandler($this->taskRepository, $this->alertRepository, $this->memberRepository);
         $task = $handler->handle(new CreateTaskCommand(
             title: (string) ($payload['title'] ?? ''),
             householdId: (string) ($payload['householdId'] ?? ''),
@@ -58,7 +58,7 @@ final class TaskController
     public function update(int $taskId, array $payload): array
     {
         $status = isset($payload['status']) ? \App\Domain\Tasks\TaskStatus::tryFrom((string) $payload['status']) : null;
-        $handler = new UpdateTaskHandler($this->taskRepository);
+        $handler = new UpdateTaskHandler($this->taskRepository, $this->memberRepository);
         return $this->serializeTask($handler->handle(new UpdateTaskCommand(
             taskId: $taskId,
             title: (string) ($payload['title'] ?? ''),

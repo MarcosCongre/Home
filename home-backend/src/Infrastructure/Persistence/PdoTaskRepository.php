@@ -29,7 +29,8 @@ final class PdoTaskRepository implements TaskRepositoryInterface
                     category TEXT NULL,
                     recurrence TEXT NULL,
                     priority TEXT NOT NULL DEFAULT "med",
-                    last_assigned_at TEXT NULL
+                    last_assigned_at TEXT NULL,
+                    deleted_at TEXT NULL
                 )'
             );
         }
@@ -61,21 +62,22 @@ final class PdoTaskRepository implements TaskRepositoryInterface
                      category = :category,
                      recurrence = :recurrence,
                      priority = :priority,
-                     last_assigned_at = :lastAssignedAt
+                     last_assigned_at = :lastAssignedAt,
+                     deleted_at = :deletedAt
                  WHERE id = :id'
             );
             $statement->bindValue(':id', $task->id(), PDO::PARAM_INT);
         } else {
             if ($task->id() > 0) {
                 $statement = $this->pdo->prepare(
-                    'INSERT INTO tasks (id, title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at)
-                     VALUES (:id, :title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt)'
+                    'INSERT INTO tasks (id, title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at, deleted_at)
+                     VALUES (:id, :title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt, :deletedAt)'
                 );
                 $statement->bindValue(':id', $task->id(), PDO::PARAM_INT);
             } else {
                 $statement = $this->pdo->prepare(
-                    'INSERT INTO tasks (title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at)
-                     VALUES (:title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt)'
+                    'INSERT INTO tasks (title, status, household_id, assigned_member_id, created_at, completed_at, day, time, category, recurrence, priority, last_assigned_at, deleted_at)
+                     VALUES (:title, :status, :householdId, :assignedMemberId, :createdAt, :completedAt, :day, :time, :category, :recurrence, :priority, :lastAssignedAt, :deletedAt)'
                 );
             }
         }
@@ -94,6 +96,8 @@ final class PdoTaskRepository implements TaskRepositoryInterface
         $statement->bindValue(':priority', $priority, PDO::PARAM_STR);
         $lastAssignedAt = $task->lastAssignedAt();
         $statement->bindValue(':lastAssignedAt', $lastAssignedAt === null ? null : DbDateTime::format($lastAssignedAt), $lastAssignedAt === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
+        $deletedAt = $task->deletedAt();
+        $statement->bindValue(':deletedAt', $deletedAt === null ? null : DbDateTime::format($deletedAt), $deletedAt === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
 
         if ($task->id() === 0) {
@@ -103,7 +107,7 @@ final class PdoTaskRepository implements TaskRepositoryInterface
 
     public function findById(int $id): ?Task
     {
-        $statement = $this->pdo->prepare('SELECT * FROM tasks WHERE id = :id');
+        $statement = $this->pdo->prepare('SELECT * FROM tasks WHERE id = :id AND deleted_at IS NULL');
         $statement->bindValue(':id', $id, PDO::PARAM_INT);
         $statement->execute();
 
@@ -116,19 +120,12 @@ final class PdoTaskRepository implements TaskRepositoryInterface
         return $this->hydrateTask($row);
     }
 
-    public function delete(int $id): void
-    {
-        $statement = $this->pdo->prepare('DELETE FROM tasks WHERE id = :id');
-        $statement->bindValue(':id', $id, PDO::PARAM_INT);
-        $statement->execute();
-    }
-
     /**
      * @return array<int, Task>
      */
     public function findByHouseholdId(string $householdId): array
     {
-        $statement = $this->pdo->prepare('SELECT * FROM tasks WHERE household_id = :householdId ORDER BY created_at ASC');
+        $statement = $this->pdo->prepare('SELECT * FROM tasks WHERE household_id = :householdId AND deleted_at IS NULL ORDER BY created_at ASC');
         $statement->execute([':householdId' => $householdId]);
 
         $tasks = [];
@@ -151,6 +148,7 @@ final class PdoTaskRepository implements TaskRepositoryInterface
         $recurrence = $this->normalizeOptionalString($row['recurrence'] ?? null);
         $priority = $this->normalizePriority($row['priority'] ?? null);
         $lastAssignedAt = $this->normalizeOptionalString($row['last_assigned_at'] ?? null);
+        $deletedAt = $this->normalizeOptionalString($row['deleted_at'] ?? null);
 
         return new Task(
             id: (int) $row['id'],
@@ -165,7 +163,8 @@ final class PdoTaskRepository implements TaskRepositoryInterface
             category: $category,
             recurrence: $recurrence,
             priority: $priority,
-            lastAssignedAt: $lastAssignedAt === null ? null : new \DateTimeImmutable($lastAssignedAt)
+            lastAssignedAt: $lastAssignedAt === null ? null : new \DateTimeImmutable($lastAssignedAt),
+            deletedAt: $deletedAt === null ? null : new \DateTimeImmutable($deletedAt)
         );
     }
 

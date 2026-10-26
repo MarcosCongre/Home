@@ -18,15 +18,15 @@ final class PdoMemberRepository implements MemberRepositoryInterface
     {
         if ($member->id() > 0) {
             $statement = $this->pdo->prepare(
-                'INSERT INTO members (id, household_id, name, avatar, color, created_at, updated_at)
-                 VALUES (:id, :householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-                 ON DUPLICATE KEY UPDATE name = VALUES(name), avatar = VALUES(avatar), color = VALUES(color), updated_at = CURRENT_TIMESTAMP'
+                'INSERT INTO members (id, household_id, name, avatar, color, created_at, updated_at, deleted_at)
+                 VALUES (:id, :householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :deletedAt)
+                 ON DUPLICATE KEY UPDATE name = VALUES(name), avatar = VALUES(avatar), color = VALUES(color), deleted_at = VALUES(deleted_at), updated_at = CURRENT_TIMESTAMP'
             );
             $statement->bindValue(':id', $member->id(), PDO::PARAM_INT);
         } else {
             $statement = $this->pdo->prepare(
-                'INSERT INTO members (household_id, name, avatar, color, created_at, updated_at)
-                 VALUES (:householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)'
+                'INSERT INTO members (household_id, name, avatar, color, created_at, updated_at, deleted_at)
+                 VALUES (:householdId, :name, :avatar, :color, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, :deletedAt)'
             );
         }
 
@@ -34,6 +34,8 @@ final class PdoMemberRepository implements MemberRepositoryInterface
         $statement->bindValue(':name', $member->name());
         $statement->bindValue(':avatar', $member->avatar());
         $statement->bindValue(':color', $member->color());
+        $deletedAt = $member->deletedAt();
+        $statement->bindValue(':deletedAt', $deletedAt === null ? null : DbDateTime::format($deletedAt), $deletedAt === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         $statement->execute();
 
         if ($member->id() === 0) {
@@ -43,7 +45,7 @@ final class PdoMemberRepository implements MemberRepositoryInterface
 
     public function findById(int $id): ?Member
     {
-        $statement = $this->pdo->prepare('SELECT * FROM members WHERE id = :id');
+        $statement = $this->pdo->prepare('SELECT * FROM members WHERE id = :id AND deleted_at IS NULL');
         $statement->bindValue(':id', $id, PDO::PARAM_INT);
         $statement->execute();
         $row = $statement->fetch(PDO::FETCH_ASSOC);
@@ -53,7 +55,7 @@ final class PdoMemberRepository implements MemberRepositoryInterface
 
     public function findByHouseholdId(string $householdId): array
     {
-        $statement = $this->pdo->prepare('SELECT * FROM members WHERE household_id = :householdId ORDER BY name ASC');
+        $statement = $this->pdo->prepare('SELECT * FROM members WHERE household_id = :householdId AND deleted_at IS NULL ORDER BY name ASC');
         $statement->execute([':householdId' => $householdId]);
         $members = [];
 
@@ -64,13 +66,6 @@ final class PdoMemberRepository implements MemberRepositoryInterface
         return $members;
     }
 
-    public function delete(int $id): void
-    {
-        $statement = $this->pdo->prepare('DELETE FROM members WHERE id = :id');
-        $statement->bindValue(':id', $id, PDO::PARAM_INT);
-        $statement->execute();
-    }
-
     /** @param array<string, mixed> $row */
     private function hydrate(array $row): Member
     {
@@ -79,7 +74,8 @@ final class PdoMemberRepository implements MemberRepositoryInterface
             name: (string) $row['name'],
             avatar: (string) $row['avatar'],
             color: (string) $row['color'],
-            householdId: (string) $row['household_id']
+            householdId: (string) $row['household_id'],
+            deletedAt: isset($row['deleted_at']) && $row['deleted_at'] !== '' ? new \DateTimeImmutable((string) $row['deleted_at']) : null
         );
     }
 }
